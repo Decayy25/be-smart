@@ -1,0 +1,14 @@
+export enum ROLES {
+    PENDING = "PENDING",
+    STUDENT = "STUDENT",
+    TEACHER = "TEACHER",
+    STAFF = "STAFF",
+    PRINCIPAL = "PRINCIPAL"
+}
+
+export enum STATUS {
+    PENDING = "PENDING",
+    ACTIVE = "ACTIVE",
+    REJECTED = "REJECTED",
+    SUSPENDED = "SUSPENDED"
+}
