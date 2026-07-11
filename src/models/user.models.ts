@@ -1,12 +1,13 @@
 import mongoose, { Document } from "mongoose";
 import { ROLES, STATUS } from "../utils/constant";
-import bcrypt from "bcrypt";
+import { encrypt } from "../utils/encrypt";
 
 const Schema = mongoose.Schema;
 
 export interface IUser extends Document {
   name: string;
   email: string;
+  phoneNumber: number;
   password: string;
   nik_ktp: string;
   roles: string[];
@@ -32,6 +33,10 @@ const UserSchema = new Schema<IUser>(
       type: Schema.Types.String,
       unique: true,
       required: true,
+    },
+    phoneNumber: {
+        type: Schema.Types.Number,
+        required: true,
     },
     password: {
       type: Schema.Types.String,
@@ -61,7 +66,7 @@ const UserSchema = new Schema<IUser>(
             STATUS.REJECTED,
             STATUS.SUSPENDED
         ],
-        defalt: [STATUS.PENDING]
+        default: [STATUS.PENDING]
     },
     isApprove: {
         type: Schema.Types.Boolean,
@@ -111,31 +116,23 @@ UserSchema.pre("save", async function (this: any) {
     const user = this;
 
     try {
-        user.password = bcrypt(user.password);
+        if (user.isModified("password")) {
+            user.password = encrypt(user.password);
+        }
+        if (user.isNew) {
+            user.activationToken = encrypt(user.id);
+        }
         return user;
     } catch (error) {
         throw error;
     }
 })
 
-
-UserSchema.methods.toJSON = function () {
-    const user = this.toObject();
-    delete user.password;
-    return user
-}
-
-UserSchema.post("save", async function(doc, next) {
-    try {
-        const user = doc;
-
-        const contentApprove = await approveUser({
-            name: 
-        })
-    } catch (error) {
-        
-    }
-})
+// UserSchema.methods.toJSON = function () {
+//     const user = this.toObject();
+//     delete user.password;
+//     return user
+// }
 
 const UserModel = mongoose.model<IUser>("User", UserSchema);
 

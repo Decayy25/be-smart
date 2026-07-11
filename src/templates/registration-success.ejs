@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+    .header { font-size: 20px; font-weight: bold; margin-bottom: 20px; color: #4F46E5; }
+    .btn { display: inline-block; padding: 10px 20px; background-color: #4F46E5; color: white !important; text-decoration: none; border-radius: 5px; margin-top: 20px; }
+    .footer { margin-top: 30px; font-size: 12px; color: #777; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">Aktivasi Akun E-Learning SMarT</div>
+    <p>Halo <%= name %>,</p>
+    <p>Pendaftaran akun Anda telah disetujui oleh Administrator/Principal. Silakan klik tombol di bawah ini untuk mengaktifkan akun Anda:</p>
+    <a href="<%= activationLink %>" class="btn">Aktivasi Akun</a>
+    <p>Atau salin tautan berikut ke browser Anda:</p>
+    <p><a href="<%= activationLink %>"><%= activationLink %></a></p>
+    <div class="footer">
+      <p>Email ini dikirim secara otomatis. Mohon tidak membalas email ini.</p>
+    </div>
+  </div>
+</body>
+</html>

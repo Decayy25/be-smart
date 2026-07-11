@@ -12,7 +12,7 @@ export const registerSchema = Yup.object({
     .email("Format email tidak valid")
     .lowercase()
     .trim(),
-
+  phoneNumber: Yup.number().required("Nomor Handphone wajib diisi"),
   password: Yup.string()
     .required("Password harus diisi")
     .min(6, "Password minimal 6 karakter")

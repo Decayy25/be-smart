@@ -1,7 +1,7 @@
 import { IUserToken } from "./interfaces";
 import { Types } from "mongoose";
 import jwt from "jsonwebtoken";
-import { SECRET } from "./env";
+import { SECRET } from "./environment";
 
 export const generateToken = (user: IUserToken): string => {
   return jwt.sign({ ...user }, SECRET, {

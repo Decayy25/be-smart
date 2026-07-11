@@ -1,17 +1,23 @@
 {
   "name": "be-smart",
-  "module": "index.ts",
   "type": "module",
   "private": true,
+  "main": "src/index.ts",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "tsx watch src/index.ts"
+  },
   "dependencies": {
-    "@types/bcrypt": "^6.0.0",
     "@types/body-parser": "^1.19.5",
     "@types/cors": "2.8.17",
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.6",
     "@types/nodemailer": "^8.0.0",
-    "bcrypt": "^6.0.0",
     "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
     "dotenv": "^17.4.2",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
@@ -23,8 +29,8 @@
     "yup": "^1.4.0"
   },
   "devDependencies": {
-    "@types/multer": "^2.1.0",
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "tsx": "^4.7.0"
   },
   "peerDependencies": {
     "typescript": "^5"
