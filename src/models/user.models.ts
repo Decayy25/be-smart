@@ -1,5 +1,5 @@
 import mongoose, { Document } from "mongoose";
-import { ROLES, STATUS } from "../utils/constant";
+import { ROLES, STATUS, APPROVE } from "../utils/constant";
 import { encrypt } from "../utils/encrypt";
 
 const Schema = mongoose.Schema;
@@ -12,7 +12,7 @@ export interface IUser extends Document {
   nik_ktp: string;
   roles: string[];
   status: string[];
-  isApprove: boolean;
+  isApprove: string;
   approvedByUser: mongoose.Types.ObjectId | null;
   approvedAt: Date | null;
   rejectionReason: string | null;
@@ -35,8 +35,8 @@ const UserSchema = new Schema<IUser>(
       required: true,
     },
     phoneNumber: {
-        type: Schema.Types.Number,
-        required: true,
+      type: Schema.Types.Number,
+      required: true,
     },
     password: {
       type: Schema.Types.String,
@@ -59,74 +59,70 @@ const UserSchema = new Schema<IUser>(
       default: [ROLES.PENDING],
     },
     status: {
-        type: [String],
-        enum: [
-            STATUS.ACTIVE,
-            STATUS.PENDING,
-            STATUS.REJECTED,
-            STATUS.SUSPENDED
-        ],
-        default: [STATUS.PENDING]
+      type: [String],
+      enum: [STATUS.ACTIVE, STATUS.PENDING, STATUS.REJECTED, STATUS.SUSPENDED],
+      default: [STATUS.PENDING],
     },
     isApprove: {
-        type: Schema.Types.Boolean,
-        default: false
+      type: Schema.Types.String,
+      enum: [APPROVE.APPROVED, APPROVE.PENDING_PAYMENT, APPROVE.DAPODIK_ISSUE, APPROVE.DATA_ISSUE, APPROVE.NOT_APPROVE],
+      default: APPROVE.NOT_APPROVE,
     },
     approvedByUser: {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-        default: null,
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
     },
     approvedAt: {
-        type: Date,
-        default: null,
+      type: Date,
+      default: null,
     },
     rejectionReason: {
-        type: Schema.Types.String,
-        default: null,
+      type: Schema.Types.String,
+      default: null,
     },
     activationToken: {
-        type: Schema.Types.String,
-        default: null,
+      type: Schema.Types.String,
+      default: null,
     },
     lastLoginAt: {
-        type: Date,
-        default: null,
+      type: Date,
+      default: null,
     },
     createdAt: {
-        type: Date,
-        default: null,
+      type: Date,
+      default: null,
     },
     updatedAt: {
-        type: Date,
-        default: Date.now(),
+      type: Date,
+      default: Date.now(),
     },
     deletedAt: {
-        type: Date,
-        default: null,
-    }
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
-    collection: "Users"
-  }
+    collection: "Users",
+  },
 );
 
 UserSchema.pre("save", async function (this: any) {
-    const user = this;
+  const user = this;
 
-    try {
-        if (user.isModified("password")) {
-            user.password = encrypt(user.password);
-        }
-        if (user.isNew) {
-            user.activationToken = encrypt(user.id);
-        }
-        return user;
-    } catch (error) {
-        throw error;
+  try {
+    if (user.isModified("password")) {
+      user.password = encrypt(user.password);
     }
-})
+    if (user.isNew) {
+      user.activationToken = encrypt(user.id);
+    }
+    return user;
+  } catch (error) {
+    throw error;
+  }
+});
 
 // UserSchema.methods.toJSON = function () {
 //     const user = this.toObject();
