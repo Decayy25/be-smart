@@ -9,7 +9,18 @@ export interface IUser extends Document {
   email: string;
   phoneNumber: number;
   password: string;
-  nik_ktp: string;
+  nik_ktp: string | null;
+  nuptk: string | null;
+  nip: string | null;
+  specialization: string | null;
+  educationLevel: string | null;
+  dapodikVerified: boolean | null;
+  position: string | null;
+  department: string | null;
+  parentName: string | null;
+  parentPhone: string | null;
+  pendingPayment: number | null;
+  period: string | null;
   roles: string[];
   status: string[];
   isApprove: string;
@@ -44,8 +55,52 @@ const UserSchema = new Schema<IUser>(
     },
     nik_ktp: {
       type: Schema.Types.String,
-      required: true,
+      default: null,
       match: [/^\d{16}$/, "Nomor NIK harus 16 digit"],
+    },
+    nuptk: {
+      type: Schema.Types.String,
+      default: null,
+    },
+    nip: {
+      type: Schema.Types.String,
+      default: null,
+    },
+    specialization: {
+      type: Schema.Types.String,
+      default: null,
+    },
+    educationLevel: {
+      type: Schema.Types.String,
+      default: null,
+    },
+    dapodikVerified: {
+      type: Schema.Types.Boolean,
+      default: null,
+    },
+    position: {
+      type: Schema.Types.String,
+      default: null,
+    },
+    department: {
+      type: Schema.Types.String,
+      default: null,
+    },
+    parentName: {
+      type: Schema.Types.String,
+      default: null,
+    },
+    parentPhone: {
+      type: Schema.Types.String,
+      default: null,
+    },
+    pendingPayment: {
+      type: Schema.Types.Number,
+      default: null,
+    },
+    period: {
+      type: Schema.Types.String,
+      default: null,
     },
     roles: {
       type: [String],
@@ -65,7 +120,13 @@ const UserSchema = new Schema<IUser>(
     },
     isApprove: {
       type: Schema.Types.String,
-      enum: [APPROVE.APPROVED, APPROVE.PENDING_PAYMENT, APPROVE.DAPODIK_ISSUE, APPROVE.DATA_ISSUE, APPROVE.NOT_APPROVE],
+      enum: [
+        APPROVE.APPROVED,
+        APPROVE.PENDING_PAYMENT,
+        APPROVE.DAPODIK_ISSUE,
+        APPROVE.DATA_ISSUE,
+        APPROVE.NOT_APPROVE,
+      ],
       default: APPROVE.NOT_APPROVE,
     },
     approvedByUser: {

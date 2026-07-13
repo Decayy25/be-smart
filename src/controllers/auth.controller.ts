@@ -27,7 +27,7 @@ export default {
         return response.error(
           res,
           new Error("Email already registered"),
-          "Registration failed",
+          `Registration failed, problem: Email already registered`,
         );
       }
 
@@ -40,7 +40,7 @@ export default {
           return response.error(
             res,
             new Error("NUPTK already registered"),
-            "Registration failed",
+            `Registration failed, problem: NUPTK already registered`,
           );
         }
       }
@@ -54,7 +54,7 @@ export default {
           return response.error(
             res,
             new Error("NIP already registered"),
-            "Registration failed",
+            `Registration failed, problem: NIP already registered`,
           );
         }
       }
@@ -70,7 +70,7 @@ export default {
         password: hashedPassword,
         roles: [ROLES[role as keyof typeof ROLES]],
         status: STATUS.PENDING,
-        isApprove: "not_approved",
+        isApprove: APPROVE.NOT_APPROVE,
         ...(role === "TEACHER" && {
           nuptk: (validatedData as any).nuptk,
           nip: (validatedData as any).nip,
@@ -95,13 +95,17 @@ export default {
 
       await user.save();
 
-      // Kirim email notif registration pending
-      await sendRegistrationEmail({
-        name: user.name,
-        email: user.email,
-        roles: user.roles,
-        isApprove: "PENDING",
-      });
+      // Kirim email notif registration pending (non-blocking)
+      try {
+        await sendRegistrationEmail({
+          name: user.name,
+          email: user.email,
+          roles: user.roles,
+          isApprove: APPROVE.NOT_APPROVE,
+        });
+      } catch (err) {
+        console.error("Failed sending registration email:", err);
+      }
 
       return response.success(
         res,
@@ -113,12 +117,12 @@ export default {
         "Registration successful. Please wait for admin approval.",
       );
     } catch (error) {
-      // Handle Yup validation error
       if (error instanceof Yup.ValidationError) {
+         console.log(error.message)
         return response.error(
           res,
           new Error(error.message),
-          "Validation failed",
+          error.message,
         );
       }
       return response.error(res, error, "Registration failed");

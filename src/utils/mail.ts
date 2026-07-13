@@ -9,13 +9,15 @@ import {
   EMAIL_SMTP_SECURE,
   EMAIL_SMTP_SERVICE_NAME,
 } from "./environment";
-import { ROLES, STATUS } from "./constant";
+import { ROLES, APPROVE } from "./constant";
 
 export const renderMailHTML = async (
   templateName: string,
   data: Record<string, any>,
 ): Promise<string> => {
-  const templatePath = path.join(__dirname, "../templates", templateName);
+  // Use project cwd to locate templates (works with ESM and TS setups)
+  const templatesDir = path.join(process.cwd(), "src", "templates");
+  const templatePath = path.join(templatesDir, templateName);
   let template = await fs.promises.readFile(templatePath, "utf-8");
 
   for (const key in data) {
@@ -49,6 +51,10 @@ export const sendMail = async (options: {
   }
 
   const transporter = nodemailer.createTransport(transportConfig);
+  transporter
+    .verify()
+    .then(() => console.log("SMTP OK"))
+    .catch((err) => console.error("SMTP fail", err));
 
   const mailOptions = {
     from: options.from || EMAIL_SMTP_USER,
@@ -59,8 +65,6 @@ export const sendMail = async (options: {
 
   return await transporter.sendMail(mailOptions);
 };
-
-
 
 interface SendRegistrationEmailOptions {
   name: string;
@@ -75,11 +79,17 @@ interface SendRegistrationEmailOptions {
 
 const templateMap: Record<string, string> = {
   approved: "registration-success.ejs",
-  "student:pending_payment": "student-pending-payment.ejs",
-  "teacher:dapodik_issue": "teacher-dapodik-issue.ejs",
-  "staff:data_issue": "staff-dapodik-issue.ejs",
+  failed: "registration-failed.ejs",
+  "STUDENT:pending_payment": "student-pending-payment.ejs",
+  "TEACHER:dapodik_issue": "teacher-dapodik-issue.ejs",
+  "STAFF:data_issue": "staff-dapodik-issue.ejs",
 };
 
+// Input FE
+// {
+//   role: "STUDENT",
+//   status: "pending_payment"
+// }
 
 const determinePrimaryRole = (roles: ROLES[] | string[]): string => {
   const hierarchy = [
@@ -119,8 +129,10 @@ export const sendRegistrationEmail = async (
   // Tentukan template yang digunakan
   let templateName: string | undefined;
 
-  if (isApprove === "approved") {
+  if (isApprove === APPROVE.APPROVED) {
     templateName = templateMap["approved"];
+  } else if (isApprove === APPROVE.NOT_APPROVE) {
+    templateName = templateMap["failed"];
   } else {
     const key = `${primaryRole}:${isApprove}`;
     templateName = templateMap[key];
