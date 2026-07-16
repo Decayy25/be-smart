@@ -23,15 +23,40 @@ export default {
       const existingUser = await UserModel.findOne({
         email: validatedData.email,
       });
+
+      const existingNIK = await UserModel.findOne({
+        nik_ktp: validatedData.nik_ktp
+      });
+
       if (existingUser) {
         return response.error(
           res,
-          new Error("Email already registered"),
-          `Registration failed, problem: Email already registered`,
+          new Error("Email sudah terdaftar"),
+          `Registration failed, problem: Email sudah terdaftar`,
         );
       }
 
-      // Untuk TEACHER: cek NUPTK sudah terdaftar
+      if(existingNIK) {
+        return response.error(
+          res,
+          new Error("Nomor NIK sudah terdaftar"),
+          `Registration failed, problem: Nomor NIK sudah terdaftar`,
+        );
+      }
+
+      if (role === "STUDENT") {
+        const existingStudent = await UserModel.findOne({
+          nisn: (validatedData as any).nisn,
+        });
+        if (existingStudent) {
+          return response.error(
+            res,
+            new Error("NISN sudah terdaftar"),
+            `Registration failed, problem: NISN sudah terdaftar`,
+          );
+        }
+      }
+
       if (role === "TEACHER") {
         const existingTeacher = await UserModel.findOne({
           nuptk: (validatedData as any).nuptk,
@@ -39,13 +64,12 @@ export default {
         if (existingTeacher) {
           return response.error(
             res,
-            new Error("NUPTK already registered"),
-            `Registration failed, problem: NUPTK already registered`,
+            new Error("NUPTK sudah terdaftar"),
+            `Registration failed, problem: NUPTK sudah terdaftar`,
           );
         }
       }
 
-      // Untuk STAFF: cek NIP sudah terdaftar
       if (role === "STAFF") {
         const existingStaff = await UserModel.findOne({
           nip: (validatedData as any).nip,
@@ -53,8 +77,8 @@ export default {
         if (existingStaff) {
           return response.error(
             res,
-            new Error("NIP already registered"),
-            `Registration failed, problem: NIP already registered`,
+            new Error("NIP sudah terdaftar"),
+            `Registration failed, problem: NIP sudah terdaftar`,
           );
         }
       }
@@ -95,13 +119,13 @@ export default {
 
       await user.save();
 
-      // Kirim email notif registration pending (non-blocking)
+    
       try {
         await sendRegistrationEmail({
           name: user.name,
           email: user.email,
           roles: user.roles,
-          isApprove: APPROVE.NOT_APPROVE,
+          isApprove: APPROVE.PENDING,
         });
       } catch (err) {
         console.error("Failed sending registration email:", err);

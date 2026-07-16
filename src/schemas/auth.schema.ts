@@ -25,7 +25,10 @@ export const studentRegisterSchema = baseSchema.shape({
     .required("Role harus diisi"),
   nik_ktp: Yup.string()
     .matches(/^\d{16}$/, "NIK KTP harus 16 digit")
-    .optional(),
+    .required("Nomor NIK harus diisi"),
+    nisn: Yup.string()
+    .matches(/^\d{16}$/, "Nomor NISN harus 10 digit")
+    .required("Nomor NISN harus diisi"),
   parentName: Yup.string()
     .min(3, "Nama orang tua minimal 3 karakter")
     .optional(),

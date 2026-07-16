@@ -15,7 +15,6 @@ export const renderMailHTML = async (
   templateName: string,
   data: Record<string, any>,
 ): Promise<string> => {
-  // Use project cwd to locate templates (works with ESM and TS setups)
   const templatesDir = path.join(process.cwd(), "src", "templates");
   const templatePath = path.join(templatesDir, templateName);
   let template = await fs.promises.readFile(templatePath, "utf-8");
@@ -71,6 +70,7 @@ interface SendRegistrationEmailOptions {
   email: string;
   roles: ROLES[] | string[];
   isApprove: string;
+  nik_ktp?: number | string;
   activationLink?: string;
   pendingPayment?: number;
   period?: string;
@@ -126,7 +126,6 @@ export const sendRegistrationEmail = async (
   // Tentukan primary role dari array roles
   const primaryRole = determinePrimaryRole(roles);
 
-  // Tentukan template yang digunakan
   let templateName: string | undefined;
 
   if (isApprove === APPROVE.APPROVED) {
@@ -163,7 +162,6 @@ export const sendRegistrationEmail = async (
     emailData.reason = reason;
   }
 
-  // Render dan kirim email
   const html = await renderMailHTML(templateName, emailData);
 
   await sendMail({
