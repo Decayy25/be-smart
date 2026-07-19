@@ -1,28 +1,17 @@
 import mongoose, { Document } from "mongoose";
-import { ROLES, STATUS, APPROVE } from "../utils/constant";
-import { encrypt } from "../utils/encrypt";
+import { ROLES, STATUS, APPROVE } from "../../utils/constant";
+import { encrypt } from "../../utils/encrypt";
 
 const Schema = mongoose.Schema;
 
 export interface IUser extends Document {
-  name: string;
+  username: string;
   email: string;
   phoneNumber: number;
   password: string;
   nik_ktp: string | null;
-  nuptk: string | null;
-  nip: string | null;
-  specialization: string | null;
-  educationLevel: string | null;
-  dapodikVerified: boolean | null;
-  position: string | null;
-  department: string | null;
-  parentName: string | null;
-  parentPhone: string | null;
-  pendingPayment: number | null;
-  period: string | null;
   roles: string[];
-  status: string[];
+  status: string;
   isApprove: string;
   approvedByUser: mongoose.Types.ObjectId | null;
   approvedAt: Date | null;
@@ -36,7 +25,7 @@ export interface IUser extends Document {
 
 const UserSchema = new Schema<IUser>(
   {
-    name: {
+    username: {
       type: Schema.Types.String,
       required: true,
     },
@@ -44,6 +33,8 @@ const UserSchema = new Schema<IUser>(
       type: Schema.Types.String,
       unique: true,
       required: true,
+      lowercase: true,
+      trim: true,
     },
     phoneNumber: {
       type: Schema.Types.Number,
@@ -53,70 +44,23 @@ const UserSchema = new Schema<IUser>(
       type: Schema.Types.String,
       required: true,
     },
+    // FIELD WAJIB untuk semua user
     nik_ktp: {
       type: Schema.Types.String,
       default: null,
+      sparse: true,
       match: [/^\d{16}$/, "Nomor NIK harus 16 digit"],
-    },
-    nuptk: {
-      type: Schema.Types.String,
-      default: null,
-    },
-    nip: {
-      type: Schema.Types.String,
-      default: null,
-    },
-    specialization: {
-      type: Schema.Types.String,
-      default: null,
-    },
-    educationLevel: {
-      type: Schema.Types.String,
-      default: null,
-    },
-    dapodikVerified: {
-      type: Schema.Types.Boolean,
-      default: null,
-    },
-    position: {
-      type: Schema.Types.String,
-      default: null,
-    },
-    department: {
-      type: Schema.Types.String,
-      default: null,
-    },
-    parentName: {
-      type: Schema.Types.String,
-      default: null,
-    },
-    parentPhone: {
-      type: Schema.Types.String,
-      default: null,
-    },
-    pendingPayment: {
-      type: Schema.Types.Number,
-      default: null,
-    },
-    period: {
-      type: Schema.Types.String,
-      default: null,
     },
     roles: {
       type: [String],
-      enum: [
-        ROLES.PRINCIPAL,
-        ROLES.STAFF,
-        ROLES.TEACHER,
-        ROLES.STUDENT,
-        ROLES.PENDING,
-      ],
-      default: [ROLES.PENDING],
+      enum: [ROLES.STAFF, ROLES.TEACHER, ROLES.STUDENT],
+      required: true,
+      default: [],
     },
     status: {
-      type: [String],
+      type: Schema.Types.String,
       enum: [STATUS.ACTIVE, STATUS.PENDING, STATUS.REJECTED, STATUS.SUSPENDED],
-      default: [STATUS.PENDING],
+      default: STATUS.PENDING,
     },
     isApprove: {
       type: Schema.Types.String,
@@ -127,7 +71,8 @@ const UserSchema = new Schema<IUser>(
         APPROVE.DATA_ISSUE,
         APPROVE.NOT_APPROVE,
       ],
-      default: APPROVE.NOT_APPROVE,
+      default: APPROVE.PENDING,
+      index: true,
     },
     approvedByUser: {
       type: Schema.Types.ObjectId,
@@ -145,22 +90,17 @@ const UserSchema = new Schema<IUser>(
     activationToken: {
       type: Schema.Types.String,
       default: null,
+      select: false,
     },
     lastLoginAt: {
       type: Date,
       default: null,
-    },
-    createdAt: {
-      type: Date,
-      default: null,
-    },
-    updatedAt: {
-      type: Date,
-      default: Date.now(),
+      index: true,
     },
     deletedAt: {
       type: Date,
       default: null,
+      index: true,
     },
   },
   {
@@ -171,7 +111,6 @@ const UserSchema = new Schema<IUser>(
 
 UserSchema.pre("save", async function (this: any) {
   const user = this;
-
   try {
     if (user.isModified("password")) {
       user.password = encrypt(user.password);
@@ -185,11 +124,12 @@ UserSchema.pre("save", async function (this: any) {
   }
 });
 
-// UserSchema.methods.toJSON = function () {
-//     const user = this.toObject();
-//     delete user.password;
-//     return user
-// }
+UserSchema.methods.toJSON = function () {
+  const user = this.toObject();
+  delete user.password;
+  delete user.activationToken;
+  return user;
+};
 
 const UserModel = mongoose.model<IUser>("User", UserSchema);
 

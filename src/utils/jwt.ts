@@ -1,5 +1,4 @@
 import { IUserToken } from "./interfaces";
-import { Types } from "mongoose";
 import jwt from "jsonwebtoken";
 import { SECRET } from "./environment";
 

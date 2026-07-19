@@ -1,17 +1,17 @@
-import { Response, NextFunction } from "express";
+import type { Response, NextFunction } from "express";
 import type { IReqUser } from "../utils/interfaces";
 import { getUserData } from "../utils/jwt";
 import response from "../utils/response";
 
 export const authenticate = (req: IReqUser, res: Response, next: NextFunction) => {
-  const authHeader = req.headers.authorization || "";
+  const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return response.unauthorized(res, "Authorization token is missing or invalid");
   }
 
-  const token = authHeader.split(" ")[1];
+  const token = authHeader.split(" ")[1] ?? "";
   try {
-    const decoded = getUserData(token as string);
+    const decoded = getUserData(token);
     req.user = decoded;
     next();
   } catch (error) {

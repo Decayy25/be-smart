@@ -4,7 +4,7 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import db from "./utils/database";
 
-const init = async () => {
+async function init() {
   try {
     const result = await db();
 
@@ -24,11 +24,15 @@ const init = async () => {
     app.use("/api", router);
 
     app.listen(PORT, () => {
-      console.log(`Server is running on http://localhost:${PORT}`);
+      console.log(`
++============================================+
+Server is running on http://localhost:${PORT}
++============================================+
+`);
     });
   } catch (error) {
     console.error(error);
   }
-};
+}
 
 init();
