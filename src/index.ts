@@ -3,6 +3,8 @@ import router from "./routes/api";
 import bodyParser from "body-parser";
 import cors from "cors";
 import db from "./utils/database";
+import swaggerUi from "swagger-ui-express";
+import swaggerSpec from "./utils/swagger";
 
 async function init() {
   try {
@@ -22,13 +24,17 @@ async function init() {
     });
 
     app.use("/api", router);
+    app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+    app.get("/api-docs.json", (req, res) => {
+      res.setHeader("Content-Type", "application/json");
+      res.send(swaggerSpec);
+    });
 
     app.listen(PORT, () => {
-      console.log(`
-+============================================+
-Server is running on http://localhost:${PORT}
-+============================================+
-`);
+      console.log("\x1b[34m+============================================================+\x1b[0m");
+      console.log("\x1b[35m|\x1b[32m", `Server is running on http://localhost:${PORT}`, "\x1b[35m|\x1b[32m");
+      console.log("\x1b[35m|\x1b[32m", `Swagger UI is available at http://localhost:${PORT}/api-docs`, "\x1b[35m|\x1b[32m");
+      console.log("\x1b[34m+============================================================+\x1b[0m");
     });
   } catch (error) {
     console.error(error);

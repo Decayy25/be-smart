@@ -106,7 +106,6 @@ const TeacherProfileSchema = new Schema<ITeacherProfile>(
     verificationDate: {
       type: Date,
       default: null,
-      index: true,
     },
   },
   {
@@ -115,8 +114,6 @@ const TeacherProfileSchema = new Schema<ITeacherProfile>(
   },
 );
 
-TeacherProfileSchema.index({ nip: 1 }, { sparse: true });
-TeacherProfileSchema.index({ nuptk: 1 }, { sparse: true });
 TeacherProfileSchema.index({ specialization: 1 });
 TeacherProfileSchema.index({ educationLevel: 1 });
 TeacherProfileSchema.index({ employmentStatus: 1 });

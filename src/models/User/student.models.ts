@@ -93,7 +93,6 @@ const StudentProfileSchema = new Schema<IStudentProfile>(
   },
 );
 
-StudentProfileSchema.index({ studentId: 1 }, { sparse: true });
 StudentProfileSchema.index({ parentPhone: 1 }, { sparse: true });
 StudentProfileSchema.index({ grade: 1 });
 StudentProfileSchema.index({ classRoom: 1 });

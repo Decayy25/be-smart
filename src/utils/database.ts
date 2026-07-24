@@ -6,7 +6,7 @@ const db = async () => {
     await mongoose.connect(DATABASE_URL, {
       dbName: "db-wpu",
     });
-    return Promise.resolve("Database connectted!");
+    return Promise.resolve("\x1b[32mDatabase connectted! ✅");
   } catch (error) {
     return Promise.reject(error);
   }

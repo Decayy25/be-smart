@@ -9,9 +9,9 @@ export const authenticate = (req: IReqUser, res: Response, next: NextFunction) =
     return response.unauthorized(res, "Authorization token is missing or invalid");
   }
 
-  const token = authHeader.split(" ")[1] ?? "";
+  const token = authHeader.split(" ")[1];
   try {
-    const decoded = getUserData(token);
+    const decoded = getUserData(token!);
     req.user = decoded;
     next();
   } catch (error) {
