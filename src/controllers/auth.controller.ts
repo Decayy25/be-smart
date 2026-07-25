@@ -8,6 +8,7 @@ import * as Yup from "yup";
 import TeacherProfileModel from "../models/User/teacher.models";
 import StudentProfileModel from "../models/User/student.models";
 import StaffProfileModel from "../models/User/staff.models";
+import { generateToken } from "../utils/jwt";
 
 export const Register = async (req: Request, res: Response) => {
   const { role, ...data } = req.body;
@@ -16,9 +17,11 @@ export const Register = async (req: Request, res: Response) => {
     const schema = getRegisterSchema(role);
     const validateData = await schema.validate({ role, ...data });
     const existingUser = await UserModel.findOne({
-      username: validateData.username,
-      email: validateData.email,
-      nik_ktp: validateData.nik_ktp,
+      $or: [
+        {username: validateData.username},
+        {email: validateData.email},
+        {nik_ktp: validateData.nik_ktp},
+      ],
     });
 
     if (existingUser) {
@@ -58,10 +61,10 @@ export const Register = async (req: Request, res: Response) => {
 
       const studentProfile = new StudentProfileModel({
         userId: student._id,
-        nisn: (validateData as any).nisn || null,
+        nisn: (validateData as any).nisn,
         fatherName: (validateData as any).fatherName || null,
         motherName: (validateData as any).motherName || null,
-        parentPhone: (validateData as any).parentPhone || null,
+        parentPhone: (validateData as any).parentPhone,
       });
 
       await studentProfile.save();
@@ -106,13 +109,19 @@ export const Register = async (req: Request, res: Response) => {
         nuptk: (validateData as any).nuptk || null,
         specialization: (validateData as any).specialization,
         educationLevel: (validateData as any).educationLevel || null,
+        documents: {
+          cv: (validateData as any).documents.cv || null,
+          certificates: (validateData as any).documents.certificates || null,
+        }
       });
 
       await teacherProfile.save();
 
+      const result = [teacher, teacherProfile];
+
       return response.success(
         res,
-        { user: teacher, profile: teacherProfile },
+        result,
         "Registration successful. Please wait for admin approval.",
       );
     }
@@ -161,10 +170,90 @@ export const Register = async (req: Request, res: Response) => {
       );
     }
   } catch (error) {
+    const errors = error as any;
     if (error instanceof Yup.ValidationError) {
       console.log(error.message);
       return response.error(res, new Error(error.message), error.message);
     }
-    return response.error(res, error, "Registration failed");
+    return response.error(res, error, `Registration failed, problem: ${errors.message}`);
+  }
+};
+
+export const Login = async (req: Request, res: Response) => {
+  const { identifier, password } = req.body;
+
+  try {
+    if (!identifier || !password) {
+      return response.error(
+        res,
+        new Error("Identifier or password required"),
+        "Invalid credentials",
+      );
+    }
+
+    const user = await UserModel.findOne({
+      $or: [
+        {
+          email: identifier,
+        },
+        {
+          name: identifier,
+        },
+        {
+          nik_ktp: identifier,
+        },
+      ],
+      isApprove: APPROVE.APPROVED,
+      status: STATUS.ACTIVE,
+    });
+
+    if (!user) {
+      return response.error(
+        res,
+        new Error("User not found"),
+        "Invalid email or password",
+      );
+    }
+
+    if (user.password !== encrypt(password)) {
+      return response.error(
+        res,
+        new Error("Incorrect password"),
+        "Invalid email or password",
+      );
+    }
+
+    const isActive = user.status.includes(STATUS.ACTIVE);
+    if (!isActive) {
+      return response.error(
+        res,
+        new Error(
+          "Account is not active yet. Please wait for approval and email activation.",
+        ),
+        "Login failed",
+      );
+    }
+
+    const token = generateToken({
+      id: user._id,
+      role: user.roles[0],
+      roles: user.roles,
+    });
+
+    return response.success(
+      res,
+      {
+        token,
+        user: {
+          id: user._id,
+          name: user.username,
+          email: user.email,
+          roles: user.roles,
+        },
+      },
+      "Login success!",
+    );
+  } catch (error) {
+    return response.error(res, error, "Login failed");
   }
 };

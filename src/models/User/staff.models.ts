@@ -73,12 +73,8 @@ const StaffProfileSchema = new Schema<IStaffProfile>(
   },
 );
 
-StaffProfileSchema.index({ employeeId: 1 }, { sparse: true });
 StaffProfileSchema.index({ department: 1 });
 StaffProfileSchema.index({ employmentStatus: 1 });
-StaffProfileSchema.index({ workShift: 1 }, { sparse: true });
-StaffProfileSchema.index({ officeRoom: 1 }, { sparse: true });
-StaffProfileSchema.index({ createdAt: 1 });
 StaffProfileSchema.index({ updatedAt: 1 });
 StaffProfileSchema.index({ department: 1, employmentStatus: 1 });
 StaffProfileSchema.index({ department: 1, workShift: 1 }, { sparse: true });

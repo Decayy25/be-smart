@@ -14,7 +14,7 @@ const swaggerDefinition: swaggerJsdoc.OAS3Definition = {
   },
   servers: [
     {
-      url: "http://localhost:3001",
+      url: "http://192.168.10.2:3001",
       description: "Development Server",
     },
   ],
