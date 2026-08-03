@@ -1,24 +1,19 @@
 import type { Request, Response } from "express";
+import * as Yup from "yup";
 import getRegisterSchema from "../validators/auth.validator";
 import UserModel from "../models/Auth/user.models";
+import TeacherProfileModel from "../models/User/teacher.models";
+import StudentProfileModel from "../models/User/student.models";
+import StaffProfileModel, { IStaffProfile } from "../models/User/staff.models";
 import response from "../utils/response";
 import { APPROVE, ROLES, STAFF_DEPARTMENT, STATUS } from "../utils/constant";
 import { encrypt } from "../utils/encrypt";
-import * as Yup from "yup";
-import TeacherProfileModel from "../models/User/teacher.models";
-import StudentProfileModel from "../models/User/student.models";
-<<<<<<< HEAD
-import StaffProfileModel, { IStaffProfile } from "../models/User/staff.models";
 import { generateToken } from "../utils/jwt";
 import {
   StaffRegisterData,
   StudentRegisterData,
   TeacherRegisterData,
 } from "../@types/Auth";
-=======
-import StaffProfileModel from "../models/User/staff.models";
-import { generateToken } from "../utils/jwt";
->>>>>>> 22eac9e9c95d4d0621fbd2d64e10df28bbfa50ba
 
 export const Register = async (req: Request, res: Response) => {
   const { role, ...data } = req.body;
@@ -26,25 +21,20 @@ export const Register = async (req: Request, res: Response) => {
   try {
     const schema = getRegisterSchema(role);
     const validateData = await schema.validate({ role, ...data });
+
     const existingUser = await UserModel.findOne({
       $or: [
-<<<<<<< HEAD
         { username: validateData.username },
         { email: validateData.email },
         { nik_ktp: validateData.nik_ktp },
-=======
-        {username: validateData.username},
-        {email: validateData.email},
-        {nik_ktp: validateData.nik_ktp},
->>>>>>> 22eac9e9c95d4d0621fbd2d64e10df28bbfa50ba
       ],
     });
 
     if (existingUser) {
       return response.error(
         res,
-        new Error("Email sudah terdaftar"),
-        "Registration failed, problem: Email Sudah terdaftar",
+        new Error("Email/NIK/username sudah terdaftar"),
+        "Registration failed, problem: Email/NIK/username sudah terdaftar",
       );
     }
 
@@ -52,24 +42,23 @@ export const Register = async (req: Request, res: Response) => {
       case ROLES.STUDENT: {
         const studentData = validateData as StudentRegisterData;
 
-        const existingStudent = await UserModel.findOne({
-          nisn: studentData.nisn,
+        const existingStudent = await StudentProfileModel.findOne({
+          studentId: studentData.nisn,
         });
+
         if (existingStudent) {
           return response.error(
             res,
             new Error("NISN sudah terdaftar"),
-            `Registration failed, problem: NISN sudah terdaftar`,
+            "Registration failed, problem: NISN sudah terdaftar",
           );
         }
-
-        const hashedPassword = encrypt(studentData.password);
 
         const student = new UserModel({
           username: studentData.username,
           email: studentData.email,
           phoneNumber: studentData.phoneNumber,
-          password: hashedPassword,
+          password: studentData.password,
           nik_ktp: studentData.nik_ktp,
           roles: [ROLES[role as keyof typeof ROLES]],
           status: STATUS.PENDING,
@@ -80,7 +69,7 @@ export const Register = async (req: Request, res: Response) => {
 
         const studentProfile = new StudentProfileModel({
           userId: student._id,
-          nisn: studentData.nisn,
+          studentId: studentData.nisn,
           fatherName: studentData.fatherName || null,
           motherName: studentData.motherName || null,
           parentPhone: studentData.parentPhone,
@@ -96,43 +85,32 @@ export const Register = async (req: Request, res: Response) => {
       }
 
       case ROLES.TEACHER: {
-        const existingTeacher = await UserModel.findOne({
-          nuptk: (validateData as TeacherRegisterData).nuptk,
+        const teacherData = validateData as TeacherRegisterData;
+
+        const existingTeacher = await TeacherProfileModel.findOne({
+          nuptk: teacherData.nuptk,
         });
+
         if (existingTeacher) {
           return response.error(
             res,
             new Error("NUPTK sudah terdaftar"),
-            `Registration failed, problem: NUPTK sudah terdaftar`,
+            "Registration failed, problem: NUPTK sudah terdaftar",
           );
         }
 
-        const hashedPassword = encrypt(validateData.password);
-
         const teacher = new UserModel({
-          username: validateData.username,
-          email: validateData.email,
-          phoneNumber: validateData.phoneNumber,
-          password: hashedPassword,
-          nik_ktp: validateData.nik_ktp,
+          username: teacherData.username,
+          email: teacherData.email,
+          phoneNumber: teacherData.phoneNumber,
+          password: teacherData.password,
+          nik_ktp: teacherData.nik_ktp,
           roles: [ROLES[role as keyof typeof ROLES]],
           status: STATUS.PENDING,
           isApprove: APPROVE.NOT_APPROVE,
         });
 
-<<<<<<< HEAD
         await teacher.save();
-=======
-      const studentProfile = new StudentProfileModel({
-        userId: student._id,
-        nisn: (validateData as any).nisn,
-        fatherName: (validateData as any).fatherName || null,
-        motherName: (validateData as any).motherName || null,
-        parentPhone: (validateData as any).parentPhone,
-      });
->>>>>>> 22eac9e9c95d4d0621fbd2d64e10df28bbfa50ba
-
-        const teacherData = validateData as TeacherRegisterData;
 
         const teacherProfile = new TeacherProfileModel({
           userId: teacher._id,
@@ -156,56 +134,31 @@ export const Register = async (req: Request, res: Response) => {
       }
 
       case ROLES.STAFF: {
-        const existingStaff = await UserModel.findOne({
-          nik_ktp: validateData.nik_ktp,
-        });
-        if (existingStaff) {
-          return response.error(
-            res,
-            new Error("NIK KTP sudah terdaftar"),
-            `Registration failed, problem: NIK KTP sudah terdaftar`,
-          );
-        }
-
-        const hashedPassword = encrypt(validateData.password);
-
-        const staff = new UserModel({
-          username: validateData.username,
-          email: validateData.email,
-          phoneNumber: validateData.phoneNumber,
-          password: hashedPassword,
-          nik_ktp: validateData.nik_ktp,
-          roles: [ROLES[role as keyof typeof ROLES]],
-          status: STATUS.PENDING,
-          isApprove: APPROVE.NOT_APPROVE,
-        });
-
-<<<<<<< HEAD
-        await staff.save();
-=======
-      const teacherProfile = new TeacherProfileModel({
-        userId: teacher._id,
-        nip: (validateData as any).nip || null,
-        nuptk: (validateData as any).nuptk || null,
-        specialization: (validateData as any).specialization,
-        educationLevel: (validateData as any).educationLevel || null,
-        documents: {
-          cv: (validateData as any).documents.cv || null,
-          certificates: (validateData as any).documents.certificates || null,
-        }
-      });
->>>>>>> 22eac9e9c95d4d0621fbd2d64e10df28bbfa50ba
-
         const staffData = validateData as StaffRegisterData;
+
         const departmentValue = staffData.department
           ? Object.values(STAFF_DEPARTMENT).includes(
               staffData.department as STAFF_DEPARTMENT,
             )
             ? staffData.department
-            : STAFF_DEPARTMENT[staffData.department as keyof typeof STAFF_DEPARTMENT] ?? null
+            : (STAFF_DEPARTMENT[
+                staffData.department as keyof typeof STAFF_DEPARTMENT
+              ] ?? null)
           : null;
 
-<<<<<<< HEAD
+        const staff = new UserModel({
+          username: staffData.username,
+          email: staffData.email,
+          phoneNumber: staffData.phoneNumber,
+          password: staffData.password,
+          nik_ktp: staffData.nik_ktp,
+          roles: [ROLES[role as keyof typeof ROLES]],
+          status: STATUS.PENDING,
+          isApprove: APPROVE.NOT_APPROVE,
+        });
+
+        await staff.save();
+
         const staffProfile: IStaffProfile = new StaffProfileModel({
           userId: staff._id,
           employeeId: staffData.employeeId || null,
@@ -213,16 +166,6 @@ export const Register = async (req: Request, res: Response) => {
           officeRoom: staffData.officeRoom || null,
           workShift: staffData.workShift || null,
         });
-=======
-      const result = [teacher, teacherProfile];
-
-      return response.success(
-        res,
-        result,
-        "Registration successful. Please wait for admin approval.",
-      );
-    }
->>>>>>> 22eac9e9c95d4d0621fbd2d64e10df28bbfa50ba
 
         await staffProfile.save();
 
@@ -234,19 +177,19 @@ export const Register = async (req: Request, res: Response) => {
       }
 
       default:
-        break;
+        return response.error(
+          res,
+          new Error("Invalid role"),
+          "Registration failed, problem: Invalid role",
+        );
     }
   } catch (error) {
-    const errors = error as any;
     if (error instanceof Yup.ValidationError) {
-      console.log(error.message);
       return response.error(res, new Error(error.message), error.message);
     }
-<<<<<<< HEAD
-    console.log(error);
-    return response.error(res, error, "Registration failed");
-=======
-    return response.error(res, error, `Registration failed, problem: ${errors.message}`);
+
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return response.error(res, error, `Registration failed, problem: ${message}`);
   }
 };
 
@@ -262,16 +205,18 @@ export const Login = async (req: Request, res: Response) => {
       );
     }
 
+    const normalizedIdentifier = String(identifier).trim();
+
     const user = await UserModel.findOne({
       $or: [
         {
-          email: identifier,
+          email: normalizedIdentifier,
         },
         {
-          name: identifier,
+          username: normalizedIdentifier,
         },
         {
-          nik_ktp: identifier,
+          nik_ktp: normalizedIdentifier,
         },
       ],
       isApprove: APPROVE.APPROVED,
@@ -286,7 +231,7 @@ export const Login = async (req: Request, res: Response) => {
       );
     }
 
-    if (user.password !== encrypt(password)) {
+    if (user.password !== encrypt(String(password))) {
       return response.error(
         res,
         new Error("Incorrect password"),
@@ -294,87 +239,7 @@ export const Login = async (req: Request, res: Response) => {
       );
     }
 
-    const isActive = user.status.includes(STATUS.ACTIVE);
-    if (!isActive) {
-      return response.error(
-        res,
-        new Error(
-          "Account is not active yet. Please wait for approval and email activation.",
-        ),
-        "Login failed",
-      );
-    }
-
-    const token = generateToken({
-      id: user._id,
-      role: user.roles[0],
-      roles: user.roles,
-    });
-
-    return response.success(
-      res,
-      {
-        token,
-        user: {
-          id: user._id,
-          name: user.username,
-          email: user.email,
-          roles: user.roles,
-        },
-      },
-      "Login success!",
-    );
-  } catch (error) {
-    return response.error(res, error, "Login failed");
->>>>>>> 22eac9e9c95d4d0621fbd2d64e10df28bbfa50ba
-  }
-};
-
-export const Login = async (req: Request, res: Response) => {
-  const { identifier, password } = req.body;
-
-  try {
-    if (!identifier || !password) {
-      return response.error(
-        res,
-        new Error("Identifier or password required"),
-        "Invalid credentials",
-      );
-    }
-
-    const user = await UserModel.findOne({
-      $or: [
-        {
-          email: identifier,
-        },
-        {
-          name: identifier,
-        },
-        {
-          nik_ktp: identifier,
-        },
-      ],
-      isApprove: APPROVE.APPROVED,
-      status: STATUS.ACTIVE,
-    });
-
-    if (!user) {
-      return response.error(
-        res,
-        new Error("User not found"),
-        "Invalid email or password",
-      );
-    }
-
-    if (user.password !== encrypt(password)) {
-      return response.error(
-        res,
-        new Error("Incorrect password"),
-        "Invalid email or password",
-      );
-    }
-
-    const isActive = user.status.includes(STATUS.ACTIVE);
+    const isActive = user.status === STATUS.ACTIVE;
     if (!isActive) {
       return response.error(
         res,
