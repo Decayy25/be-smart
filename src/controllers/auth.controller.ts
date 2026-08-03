@@ -7,6 +7,7 @@ import { encrypt } from "../utils/encrypt";
 import * as Yup from "yup";
 import TeacherProfileModel from "../models/User/teacher.models";
 import StudentProfileModel from "../models/User/student.models";
+<<<<<<< HEAD
 import StaffProfileModel, { IStaffProfile } from "../models/User/staff.models";
 import { generateToken } from "../utils/jwt";
 import {
@@ -14,6 +15,10 @@ import {
   StudentRegisterData,
   TeacherRegisterData,
 } from "../@types/Auth";
+=======
+import StaffProfileModel from "../models/User/staff.models";
+import { generateToken } from "../utils/jwt";
+>>>>>>> 22eac9e9c95d4d0621fbd2d64e10df28bbfa50ba
 
 export const Register = async (req: Request, res: Response) => {
   const { role, ...data } = req.body;
@@ -23,9 +28,15 @@ export const Register = async (req: Request, res: Response) => {
     const validateData = await schema.validate({ role, ...data });
     const existingUser = await UserModel.findOne({
       $or: [
+<<<<<<< HEAD
         { username: validateData.username },
         { email: validateData.email },
         { nik_ktp: validateData.nik_ktp },
+=======
+        {username: validateData.username},
+        {email: validateData.email},
+        {nik_ktp: validateData.nik_ktp},
+>>>>>>> 22eac9e9c95d4d0621fbd2d64e10df28bbfa50ba
       ],
     });
 
@@ -109,7 +120,17 @@ export const Register = async (req: Request, res: Response) => {
           isApprove: APPROVE.NOT_APPROVE,
         });
 
+<<<<<<< HEAD
         await teacher.save();
+=======
+      const studentProfile = new StudentProfileModel({
+        userId: student._id,
+        nisn: (validateData as any).nisn,
+        fatherName: (validateData as any).fatherName || null,
+        motherName: (validateData as any).motherName || null,
+        parentPhone: (validateData as any).parentPhone,
+      });
+>>>>>>> 22eac9e9c95d4d0621fbd2d64e10df28bbfa50ba
 
         const teacherData = validateData as TeacherRegisterData;
 
@@ -159,7 +180,21 @@ export const Register = async (req: Request, res: Response) => {
           isApprove: APPROVE.NOT_APPROVE,
         });
 
+<<<<<<< HEAD
         await staff.save();
+=======
+      const teacherProfile = new TeacherProfileModel({
+        userId: teacher._id,
+        nip: (validateData as any).nip || null,
+        nuptk: (validateData as any).nuptk || null,
+        specialization: (validateData as any).specialization,
+        educationLevel: (validateData as any).educationLevel || null,
+        documents: {
+          cv: (validateData as any).documents.cv || null,
+          certificates: (validateData as any).documents.certificates || null,
+        }
+      });
+>>>>>>> 22eac9e9c95d4d0621fbd2d64e10df28bbfa50ba
 
         const staffData = validateData as StaffRegisterData;
         const departmentValue = staffData.department
@@ -170,6 +205,7 @@ export const Register = async (req: Request, res: Response) => {
             : STAFF_DEPARTMENT[staffData.department as keyof typeof STAFF_DEPARTMENT] ?? null
           : null;
 
+<<<<<<< HEAD
         const staffProfile: IStaffProfile = new StaffProfileModel({
           userId: staff._id,
           employeeId: staffData.employeeId || null,
@@ -177,6 +213,16 @@ export const Register = async (req: Request, res: Response) => {
           officeRoom: staffData.officeRoom || null,
           workShift: staffData.workShift || null,
         });
+=======
+      const result = [teacher, teacherProfile];
+
+      return response.success(
+        res,
+        result,
+        "Registration successful. Please wait for admin approval.",
+      );
+    }
+>>>>>>> 22eac9e9c95d4d0621fbd2d64e10df28bbfa50ba
 
         await staffProfile.save();
 
@@ -191,12 +237,96 @@ export const Register = async (req: Request, res: Response) => {
         break;
     }
   } catch (error) {
+    const errors = error as any;
     if (error instanceof Yup.ValidationError) {
       console.log(error.message);
       return response.error(res, new Error(error.message), error.message);
     }
+<<<<<<< HEAD
     console.log(error);
     return response.error(res, error, "Registration failed");
+=======
+    return response.error(res, error, `Registration failed, problem: ${errors.message}`);
+  }
+};
+
+export const Login = async (req: Request, res: Response) => {
+  const { identifier, password } = req.body;
+
+  try {
+    if (!identifier || !password) {
+      return response.error(
+        res,
+        new Error("Identifier or password required"),
+        "Invalid credentials",
+      );
+    }
+
+    const user = await UserModel.findOne({
+      $or: [
+        {
+          email: identifier,
+        },
+        {
+          name: identifier,
+        },
+        {
+          nik_ktp: identifier,
+        },
+      ],
+      isApprove: APPROVE.APPROVED,
+      status: STATUS.ACTIVE,
+    });
+
+    if (!user) {
+      return response.error(
+        res,
+        new Error("User not found"),
+        "Invalid email or password",
+      );
+    }
+
+    if (user.password !== encrypt(password)) {
+      return response.error(
+        res,
+        new Error("Incorrect password"),
+        "Invalid email or password",
+      );
+    }
+
+    const isActive = user.status.includes(STATUS.ACTIVE);
+    if (!isActive) {
+      return response.error(
+        res,
+        new Error(
+          "Account is not active yet. Please wait for approval and email activation.",
+        ),
+        "Login failed",
+      );
+    }
+
+    const token = generateToken({
+      id: user._id,
+      role: user.roles[0],
+      roles: user.roles,
+    });
+
+    return response.success(
+      res,
+      {
+        token,
+        user: {
+          id: user._id,
+          name: user.username,
+          email: user.email,
+          roles: user.roles,
+        },
+      },
+      "Login success!",
+    );
+  } catch (error) {
+    return response.error(res, error, "Login failed");
+>>>>>>> 22eac9e9c95d4d0621fbd2d64e10df28bbfa50ba
   }
 };
 
