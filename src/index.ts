@@ -32,7 +32,7 @@ async function init() {
 
     app.listen(PORT, () => {
       console.log("\x1b[34m+============================================================+\x1b[0m");
-      console.log("\x1b[35m|\x1b[32m", `Server is running on http://localhost:${PORT}`, "\x1b[35m|\x1b[32m");
+      console.log("\x1b[35m|\x1b[32m", `Server is running on http://localhost:${PORT}               `, "\x1b[35m|\x1b[32m");
       console.log("\x1b[35m|\x1b[32m", `Swagger UI is available at http://localhost:${PORT}/api-docs`, "\x1b[35m|\x1b[32m");
       console.log("\x1b[34m+============================================================+\x1b[0m");
     });

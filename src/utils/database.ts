@@ -4,7 +4,7 @@ import { DATABASE_URL } from "./environment";
 const db = async () => {
   try {
     await mongoose.connect(DATABASE_URL, {
-      dbName: "db-wpu",
+      dbName: "DB-smart",
     });
     return Promise.resolve("\x1b[32mDatabase connectted! ✅");
   } catch (error) {

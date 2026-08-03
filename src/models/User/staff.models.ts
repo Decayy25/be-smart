@@ -6,7 +6,7 @@ const Schema = mongoose.Schema;
 export interface IStaffProfile extends Document {
   userId: mongoose.Types.ObjectId;
   employeeId: string | null;
-  department: STAFF_DEPARTMENT;
+  department: STAFF_DEPARTMENT | string | null;
   officeRoom: string | null;
   workShift: string | null;
   employmentStatus: EMPLOYMENT_STATUS;
@@ -32,6 +32,7 @@ const StaffProfileSchema = new Schema<IStaffProfile>(
     },
     department: {
       type: Schema.Types.String,
+      trim: true,
       enum: [
         STAFF_DEPARTMENT.ADMINISTRATION,
         STAFF_DEPARTMENT.CLEANING_SERVICE,
@@ -73,12 +74,8 @@ const StaffProfileSchema = new Schema<IStaffProfile>(
   },
 );
 
-StaffProfileSchema.index({ employeeId: 1 }, { sparse: true });
 StaffProfileSchema.index({ department: 1 });
 StaffProfileSchema.index({ employmentStatus: 1 });
-StaffProfileSchema.index({ workShift: 1 }, { sparse: true });
-StaffProfileSchema.index({ officeRoom: 1 }, { sparse: true });
-StaffProfileSchema.index({ createdAt: 1 });
 StaffProfileSchema.index({ updatedAt: 1 });
 StaffProfileSchema.index({ department: 1, employmentStatus: 1 });
 StaffProfileSchema.index({ department: 1, workShift: 1 }, { sparse: true });

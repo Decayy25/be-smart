@@ -29,16 +29,16 @@ export enum EDUCATION_LEVEL {
 }
 
 export enum POSITION {
-  PRINCIPAL = "Kepala Sekolah",
-  VICE_PRINCIPAL = "Wakil Kepala Sekolah",
+  PRINCIPAL = "Kepala_Sekolah",
+  VICE_PRINCIPAL = "Wakil_Kepala_Sekolah",
   COORDINATOR = "Koordinator",
-  HOMEROOM_TEACHER = "Wali Kelas",
-  GUIDANCE_COUNSELOR = "Guru BK",
-  HEAD_OF_PROGRAM = "Kepala Program Keahlian",
-  PKL_COORDINATOR = "Koordinator PKL",
-  OSIS_ADVISOR = "Pembina OSIS",
-  LAB_COORDINATOR = "Kepala Laboratorium",
-  EXTRACURRICULAR_ADVISOR = "Pembina Ekstrakurikuler",
+  HOMEROOM_TEACHER = "Wali_Kelas",
+  GUIDANCE_COUNSELOR = "Guru_BK",
+  HEAD_OF_PROGRAM = "Kepala_Program_Keahlian",
+  PKL_COORDINATOR = "Koordinator_PKL",
+  OSIS_ADVISOR = "Pembina_OSIS",
+  LAB_COORDINATOR = "Kepala_Laboratorium",
+  EXTRACURRICULAR_ADVISOR = "Pembina_Ekstrakurikuler",
 }
 
 export enum STAFF_DEPARTMENT {
@@ -47,7 +47,7 @@ export enum STAFF_DEPARTMENT {
   FINANCE = "Keuangan",
   LIBRARY = "Perpustakaan",
   LABORATORY = "Laboratorium",
-  IT = "Teknologi Informasi",
+  IT = "Teknologi_Informasi",
   SECURITY = "Keamanan",
   CLEANING_SERVICE = "Kebersihan",
 }

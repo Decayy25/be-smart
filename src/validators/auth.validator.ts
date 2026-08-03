@@ -1,4 +1,5 @@
 import * as Yup from "yup";
+import { STAFF_DEPARTMENT } from "../utils/constant";
 
 export const baseSchema = Yup.object().shape({
   username: Yup.string()
@@ -64,22 +65,22 @@ export const staffRegisterSchema = baseSchema.shape({
   department: Yup.string()
     .oneOf(
       [
-        "ADMINISTRATION",
-        "CLEANING_SERVICE",
-        "COOPERATIVE",
-        "FINANCE",
-        "IT",
-        "LABORATORY",
-        "LIBRARY",
-        "SECURITY",
+        STAFF_DEPARTMENT.ADMINISTRATION,
+        STAFF_DEPARTMENT.CLEANING_SERVICE,
+        STAFF_DEPARTMENT.COOPERATIVE,
+        STAFF_DEPARTMENT.FINANCE,
+        STAFF_DEPARTMENT.IT,
+        STAFF_DEPARTMENT.LABORATORY,
+        STAFF_DEPARTMENT.LIBRARY,
+        STAFF_DEPARTMENT.SECURITY,
       ],
-      "Departemen tidak valid"
+      "Departemen tidak valid",
     )
     .required("Departemen harus diisi"),
   employmentStatus: Yup.string()
     .oneOf(
       ["CONTRACT", "HONORARY", "INTERN", "PERMANENT"],
-      "Status kepegawaian tidak valid"
+      "Status kepegawaian tidak valid",
     )
     .optional(),
 });
