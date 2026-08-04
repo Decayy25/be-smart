@@ -70,7 +70,6 @@ const UserSchema = new Schema<IUser>(
         APPROVE.PENDING_PAYMENT,
         APPROVE.DAPODIK_ISSUE,
         APPROVE.DATA_ISSUE,
-        APPROVE.NOT_APPROVE,
       ],
       default: APPROVE.PENDING,
       index: true,

@@ -47,17 +47,10 @@ const init = async () => {
     });
 
     // Error Handling
-    app.use(
-      (
-        err: any,
-        req: express.Request,
-        res: express.Response,
-        next: express.NextFunction,
-      ) => {
-        console.error(err.stack);
-        res.status(500).json({ error: "Internal Server Error" });
-      },
-    );
+    app.use((err: any, res: express.Response) => {
+      console.error(err.stack);
+      res.status(500).json({ error: "Internal Server Error" });
+    });
 
     // Load SSL Certificates
     const currentFilePath = fileURLToPath(import.meta.url);
@@ -79,24 +72,40 @@ const init = async () => {
       });
     });
 
-    https.createServer(options, app).listen(PORT, () => {
-      console.log(
-        "\x1b[34m+============================================================+\x1b[0m",
-      );
-      console.log(
-        "\x1b[35m|\x1b[32m",
-        `Server is running on https://localhost:${PORT}               `,
-        "\x1b[35m|\x1b[32m",
-      );
-      console.log(
-        "\x1b[35m|\x1b[32m",
-        `Swagger UI is available at https://localhost:${PORT}/api-docs`,
-        "\x1b[35m|\x1b[32m",
-      );
-      console.log(
-        "\x1b[34m+============================================================+\x1b[0m",
-      );
-    });
+    const startServer = (port: number) => {
+      const server = https.createServer(options, app);
+
+      server.on("error", (error: NodeJS.ErrnoException) => {
+        if (error.code === "EADDRINUSE") {
+          console.warn(`Port ${port} is already in use. Trying ${port + 1}...`);
+          startServer(port + 1);
+          return;
+        }
+
+        console.error("Server startup error:", error);
+      });
+
+      server.listen(port, () => {
+        console.log(
+          "\x1b[34m+============================================================+\x1b[0m",
+        );
+        console.log(
+          "\x1b[35m|\x1b[32m",
+          `Server is running on https://localhost:${port}               `,
+          "\x1b[35m|\x1b[32m",
+        );
+        console.log(
+          "\x1b[35m|\x1b[32m",
+          `Swagger UI is available at https://localhost:${port}/api-docs`,
+          "\x1b[35m|\x1b[32m",
+        );
+        console.log(
+          "\x1b[34m+============================================================+\x1b[0m",
+        );
+      });
+    };
+
+    startServer(Number(process.env.PORT || PORT));
   } catch (error) {
     console.error(error);
   }

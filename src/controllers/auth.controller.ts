@@ -15,10 +15,11 @@ import {
   TeacherRegisterData,
 } from "../@types/Auth";
 import mongoose from "mongoose";
+import { IReqUser } from "../utils/interfaces";
 
 export const Register = async (req: Request, res: Response) => {
   const { role, ...data } = req.body;
-  
+
   const session = await mongoose.startSession();
 
   try {
@@ -69,7 +70,7 @@ export const Register = async (req: Request, res: Response) => {
           nik_ktp: studentData.nik_ktp,
           roles: [ROLES[role as keyof typeof ROLES]],
           status: STATUS.PENDING,
-          isApprove: APPROVE.NOT_APPROVE,
+          isApprove: APPROVE.PENDING,
         });
 
         await student.save({ session });
@@ -117,7 +118,7 @@ export const Register = async (req: Request, res: Response) => {
           nik_ktp: teacherData.nik_ktp,
           roles: [ROLES[role as keyof typeof ROLES]],
           status: STATUS.PENDING,
-          isApprove: APPROVE.NOT_APPROVE,
+          isApprove: APPROVE.PENDING,
         });
 
         await teacher.save({ session });
@@ -165,7 +166,7 @@ export const Register = async (req: Request, res: Response) => {
           nik_ktp: staffData.nik_ktp,
           roles: [ROLES[role as keyof typeof ROLES]],
           status: STATUS.PENDING,
-          isApprove: APPROVE.NOT_APPROVE,
+          isApprove: APPROVE.PENDING,
         });
 
         await staff.save({ session });
@@ -203,8 +204,11 @@ export const Register = async (req: Request, res: Response) => {
     }
 
     const message = error instanceof Error ? error.message : "Unknown error";
-    return response.error(res, error, `Registration failed, problem: ${message}`);
-    
+    return response.error(
+      res,
+      error,
+      `Registration failed, problem: ${message}`,
+    );
   } finally {
     await session.endSession();
   }
@@ -292,5 +296,43 @@ export const Login = async (req: Request, res: Response) => {
     );
   } catch (error) {
     return response.error(res, error, "Login failed");
+  }
+};
+
+export const Me = async (req: IReqUser, res: Response) => {
+  try {
+    const user = req.user;
+    const result = [
+      await UserModel.findById(user?.id),
+      await TeacherProfileModel.findOne({ userId: user?.id }),
+      await StudentProfileModel.findOne({ userId: user?.id }),
+      await StaffProfileModel.findOne({ userId: user?.id }),
+    ];
+
+    return response.success(res, result, "User data retrieved successfully");
+  } catch (error) {
+    return response.error(res, error, "Failed to retrieve user data");
+  }
+};
+
+export const ActivationCode = async (req: Request, res: Response) => {
+  const { code } = req.body as { code: string };
+
+  try {
+    const user = await UserModel.findOneAndUpdate(
+      {
+        activationCode: code,
+      },
+      {
+        status: STATUS.ACTIVE,
+      },
+      {
+        new: true,
+      },
+    );
+
+    return response.success(res, user, "Activation successful");
+  } catch (error) {
+    return response.error(res, error, "Activation failed");
   }
 };

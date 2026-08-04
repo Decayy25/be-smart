@@ -1,9 +1,11 @@
 import express from "express";
-import { Login, Register } from "../controllers/auth.controller";
+import { ActivationCode, Login, Me, Register } from "../controllers/auth.controller";
+import { authenticate } from "../middlewares/auth.middleware";
 
 const router = express.Router();
 
 /**
+ *
  * @swagger
  * /api/auth/register:
  *   post:
@@ -127,8 +129,10 @@ const router = express.Router();
  *                 message: "Registration failed, problem: Email Sudah terdaftar"
  *               data: null
  */
-router.post("/auth/register", Register);
 
+router.post("/auth/register", Register);
 router.post("/auth/login", Login);
+router.get("/auth/me", authenticate, Me);
+router.post("/auth/activation", ActivationCode);
 
 export default router;
