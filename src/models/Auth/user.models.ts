@@ -65,6 +65,7 @@ const UserSchema = new Schema<IUser>(
     isApprove: {
       type: Schema.Types.String,
       enum: [
+        APPROVE.PENDING,
         APPROVE.APPROVED,
         APPROVE.PENDING_PAYMENT,
         APPROVE.DAPODIK_ISSUE,

@@ -1,5 +1,12 @@
 # dependencies (bun install)
 node_modules
+certs
+
+# Sensitive Files
+certs/key.pem
+certs/*.key
+certs/private*
+
 
 # output
 out
@@ -21,6 +28,8 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .env.test.local
 .env.production.local
 .env.local
+.pem
+.key.pem
 
 # caches
 .eslintcache

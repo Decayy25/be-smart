@@ -1,5 +1,5 @@
 import express from "express";
-import { Register } from "../controllers/auth.controller";
+import { Login, Register } from "../controllers/auth.controller";
 
 const router = express.Router();
 
@@ -51,6 +51,11 @@ const router = express.Router();
  *                 nip: "198501012010011001"
  *                 specialization: Matematika
  *                 educationLevel: S1
+ *                 documents:
+ *                   cv: https://example.com/cv.pdf
+ *                   certificates:
+ *                     - https://example.com/certificate1.pdf
+ *                     - https://example.com/certificate2.pdf
  *             staff:
  *               summary: Register sebagai Staff
  *               value:
@@ -123,5 +128,7 @@ const router = express.Router();
  *               data: null
  */
 router.post("/auth/register", Register);
+
+router.post("/auth/login", Login);
 
 export default router;

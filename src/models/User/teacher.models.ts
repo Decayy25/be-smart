@@ -83,16 +83,16 @@ const TeacherProfileSchema = new Schema<ITeacherProfile>(
         POSITION.PKL_COORDINATOR,
       ],
     },
-    // documents: {
-    //   cv: {
-    //     type: Schema.Types.String,
-    //     required: true,
-    //   },
-    //   certificates: {
-    //     type: [String],
-    //     required: true,
-    //   },
-    // },
+    documents: {
+      cv: {
+        type: Schema.Types.String,
+        required: true,
+      },
+      certificates: {
+        type: [String],
+        required: true,
+      },
+    },
     employmentStatus: {
       type: Schema.Types.String,
       enum: [

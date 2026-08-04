@@ -14,7 +14,7 @@ const swaggerDefinition: swaggerJsdoc.OAS3Definition = {
   },
   servers: [
     {
-      url: "http://192.168.10.2:3001",
+      url: "https://localhost:3001",
       description: "Development Server",
     },
   ],
@@ -93,7 +93,8 @@ const swaggerDefinition: swaggerJsdoc.OAS3Definition = {
           },
           data: {
             type: "object",
-            description: "Object dengan field name sebagai key dan pesan error sebagai value",
+            description:
+              "Object dengan field name sebagai key dan pesan error sebagai value",
             example: {
               email: "Email tidak valid",
             },
@@ -236,7 +237,21 @@ const swaggerDefinition: swaggerJsdoc.OAS3Definition = {
           grade: {
             type: "string",
             nullable: true,
-            enum: ["1","2","3","4","5","6","7","8","9","10","11","12", null],
+            enum: [
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8",
+              "9",
+              "10",
+              "11",
+              "12",
+              null,
+            ],
             example: null,
           },
           classRoom: {
@@ -348,13 +363,26 @@ const swaggerDefinition: swaggerJsdoc.OAS3Definition = {
               cv: {
                 type: "string",
                 nullable: true,
+                example: "https://example.com/cv.pdf",
               },
               certificates: {
                 type: "array",
                 items: {
                   type: "string",
+                  example: "https://example.com/certificate1.pdf",
                 },
+                example: [
+                  "https://example.com/certificate1.pdf",
+                  "https://example.com/certificate2.pdf",
+                ],
               },
+            },
+            example: {
+              cv: "https://example.com/cv.pdf",
+              certificates: [
+                "https://example.com/certificate1.pdf",
+                "https://example.com/certificate2.pdf",
+              ],
             },
           },
           verificationDate: {
@@ -577,6 +605,23 @@ const swaggerDefinition: swaggerJsdoc.OAS3Definition = {
             example: "S1",
             description: "Opsional — Jenjang pendidikan terakhir",
           },
+          documents: {
+            type: "object",
+            properties: {
+              cv: {
+                type: "string",
+                example: "https://example.com/cv.pdf",
+              },
+              certificates: {
+                type: "array",
+                items: {
+                  type: "string",
+                  example: "https://example.com/certificate1.pdf",
+                },
+              },
+            },
+            required: ["cv", "certificates"],
+          },
         },
       },
 
@@ -667,10 +712,7 @@ const swaggerDefinition: swaggerJsdoc.OAS3Definition = {
 
 const options: swaggerJsdoc.OAS3Options = {
   swaggerDefinition,
-  apis: [
-    "./src/routes/*.ts",
-    "./src/controllers/*.ts",
-  ],
+  apis: ["src/routes/*.ts", "src/controllers/*.ts"],
 };
 
 const swaggerSpec = swaggerJsdoc(options);

@@ -7,18 +7,23 @@ import StudentProfileModel from "../models/User/student.models";
 import StaffProfileModel, { IStaffProfile } from "../models/User/staff.models";
 import response from "../utils/response";
 import { APPROVE, ROLES, STAFF_DEPARTMENT, STATUS } from "../utils/constant";
-import { encrypt } from "../utils/encrypt";
+import { comparePassword } from "../utils/encrypt";
 import { generateToken } from "../utils/jwt";
 import {
   StaffRegisterData,
   StudentRegisterData,
   TeacherRegisterData,
 } from "../@types/Auth";
+import mongoose from "mongoose";
 
 export const Register = async (req: Request, res: Response) => {
   const { role, ...data } = req.body;
+  
+  const session = await mongoose.startSession();
 
   try {
+    session.startTransaction();
+
     const schema = getRegisterSchema(role);
     const validateData = await schema.validate({ role, ...data });
 
@@ -28,9 +33,10 @@ export const Register = async (req: Request, res: Response) => {
         { email: validateData.email },
         { nik_ktp: validateData.nik_ktp },
       ],
-    });
+    }).session(session);
 
     if (existingUser) {
+      await session.abortTransaction();
       return response.error(
         res,
         new Error("Email/NIK/username sudah terdaftar"),
@@ -44,9 +50,10 @@ export const Register = async (req: Request, res: Response) => {
 
         const existingStudent = await StudentProfileModel.findOne({
           studentId: studentData.nisn,
-        });
+        }).session(session);
 
         if (existingStudent) {
+          await session.abortTransaction();
           return response.error(
             res,
             new Error("NISN sudah terdaftar"),
@@ -65,7 +72,7 @@ export const Register = async (req: Request, res: Response) => {
           isApprove: APPROVE.NOT_APPROVE,
         });
 
-        await student.save();
+        await student.save({ session });
 
         const studentProfile = new StudentProfileModel({
           userId: student._id,
@@ -75,7 +82,9 @@ export const Register = async (req: Request, res: Response) => {
           parentPhone: studentData.parentPhone,
         });
 
-        await studentProfile.save();
+        await studentProfile.save({ session });
+
+        await session.commitTransaction();
 
         return response.success(
           res,
@@ -89,9 +98,10 @@ export const Register = async (req: Request, res: Response) => {
 
         const existingTeacher = await TeacherProfileModel.findOne({
           nuptk: teacherData.nuptk,
-        });
+        }).session(session);
 
         if (existingTeacher) {
+          await session.abortTransaction();
           return response.error(
             res,
             new Error("NUPTK sudah terdaftar"),
@@ -110,7 +120,7 @@ export const Register = async (req: Request, res: Response) => {
           isApprove: APPROVE.NOT_APPROVE,
         });
 
-        await teacher.save();
+        await teacher.save({ session });
 
         const teacherProfile = new TeacherProfileModel({
           userId: teacher._id,
@@ -124,7 +134,8 @@ export const Register = async (req: Request, res: Response) => {
           },
         });
 
-        await teacherProfile.save();
+        await teacherProfile.save({ session });
+        await session.commitTransaction();
 
         return response.success(
           res,
@@ -157,7 +168,7 @@ export const Register = async (req: Request, res: Response) => {
           isApprove: APPROVE.NOT_APPROVE,
         });
 
-        await staff.save();
+        await staff.save({ session });
 
         const staffProfile: IStaffProfile = new StaffProfileModel({
           userId: staff._id,
@@ -167,7 +178,9 @@ export const Register = async (req: Request, res: Response) => {
           workShift: staffData.workShift || null,
         });
 
-        await staffProfile.save();
+        await staffProfile.save({ session });
+
+        await session.commitTransaction();
 
         return response.success(
           res,
@@ -184,12 +197,16 @@ export const Register = async (req: Request, res: Response) => {
         );
     }
   } catch (error) {
+    await session.abortTransaction();
     if (error instanceof Yup.ValidationError) {
       return response.error(res, new Error(error.message), error.message);
     }
 
     const message = error instanceof Error ? error.message : "Unknown error";
     return response.error(res, error, `Registration failed, problem: ${message}`);
+    
+  } finally {
+    await session.endSession();
   }
 };
 
@@ -205,7 +222,7 @@ export const Login = async (req: Request, res: Response) => {
       );
     }
 
-    const normalizedIdentifier = String(identifier).trim();
+    const normalizedIdentifier = String(identifier).trim().toLowerCase();
 
     const user = await UserModel.findOne({
       $or: [
@@ -227,15 +244,19 @@ export const Login = async (req: Request, res: Response) => {
       return response.error(
         res,
         new Error("User not found"),
-        "Invalid email or password",
+        "User not found or not approved yet. Please check your credentials and approval status.",
       );
     }
 
-    if (user.password !== encrypt(String(password))) {
+    const inputPassword = String(password);
+    const isPasswordValid = comparePassword(inputPassword, user.password);
+
+    if (!isPasswordValid) {
+      console.log(`Password: ${inputPassword}, Stored: ${user.password}`);
       return response.error(
         res,
         new Error("Incorrect password"),
-        "Invalid email or password",
+        "Invalid identifier or password",
       );
     }
 

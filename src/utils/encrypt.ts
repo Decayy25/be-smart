@@ -7,3 +7,18 @@ export const encrypt = (password: string): string => {
     .toString("hex");
   return encrypted;
 };
+
+export const comparePassword = (
+  password: string,
+  storedPassword: string,
+): boolean => {
+  if (!password || !storedPassword) {
+    return false;
+  }
+
+  if (storedPassword === password) {
+    return true;
+  }
+
+  return storedPassword === encrypt(password);
+};
