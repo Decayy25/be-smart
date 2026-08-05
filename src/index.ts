@@ -105,7 +105,7 @@ const init = async () => {
       });
     };
 
-    startServer(Number(process.env.PORT || PORT));
+    startServer(Number(PORT));
   } catch (error) {
     console.error(error);
   }

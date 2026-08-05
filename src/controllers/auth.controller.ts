@@ -302,12 +302,29 @@ export const Login = async (req: Request, res: Response) => {
 export const Me = async (req: IReqUser, res: Response) => {
   try {
     const user = req.user;
-    const result = [
-      await UserModel.findById(user?.id),
-      await TeacherProfileModel.findOne({ userId: user?.id }),
-      await StudentProfileModel.findOne({ userId: user?.id }),
-      await StaffProfileModel.findOne({ userId: user?.id }),
-    ];
+    let result;
+    const currentRole = Array.isArray(user?.roles) ? user.roles[0] : user?.role;
+
+    if (currentRole === "STUDENT") {
+      result = [
+        await UserModel.findById(user?.id),
+        await StudentProfileModel.findOne({ userId: user?.id }),
+      ];
+    }
+
+    if (currentRole === "TEACHER") {
+      result = [
+        await UserModel.findById(user?.id),
+        await TeacherProfileModel.findOne({ userId: user?.id }),
+      ];
+    }
+
+    if (currentRole === "STAFF") {
+      result = [
+        await UserModel.findById(user?.id),
+        await StaffProfileModel.findOne({ userId: user?.id }),
+      ];
+    }
 
     return response.success(res, result, "User data retrieved successfully");
   } catch (error) {
@@ -319,6 +336,11 @@ export const ActivationCode = async (req: Request, res: Response) => {
   const { code } = req.body as { code: string };
 
   try {
+    const approveDetected = await UserModel.findOne({
+      activationCode: code,
+      isApprove: APPROVE.APPROVED,
+    });
+
     const user = await UserModel.findOneAndUpdate(
       {
         activationCode: code,
@@ -331,8 +353,14 @@ export const ActivationCode = async (req: Request, res: Response) => {
       },
     );
 
-    return response.success(res, user, "Activation successful");
+    const result = [approveDetected, user];
+
+    return response.success(res, result, "Activation successful");
   } catch (error) {
     return response.error(res, error, "Activation failed");
   }
 };
+
+export const ApproveUser = async (req: Request, res: Response) => {
+  const { userId, approve } = req.body as { userId: string; approve: boolean };
+}
