@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import * as Yup from "yup";
 import getRegisterSchema from "../validators/auth.validator";
-import UserModel from "../models/Auth/user.models";
+import UserModel, { UserSchema } from "../models/Auth/user.models";
 import TeacherProfileModel from "../models/User/teacher.models";
 import StudentProfileModel from "../models/User/student.models";
 import StaffProfileModel, { IStaffProfile } from "../models/User/staff.models";
@@ -15,7 +15,9 @@ import {
   TeacherRegisterData,
 } from "../@types/Auth";
 import mongoose from "mongoose";
-import { IReqUser } from "../utils/interfaces";
+import { IApproveUser, IReqUser } from "../utils/interfaces";
+import { renderMailHTML, sendMail } from "../utils/mail/mail";
+import { CLIENT_HOST, EMAIL_SMTP_USER } from "../utils/environment";
 
 export const Register = async (req: Request, res: Response) => {
   const { role, ...data } = req.body;
@@ -276,24 +278,11 @@ export const Login = async (req: Request, res: Response) => {
     }
 
     const token = generateToken({
-      id: user._id,
-      role: user.roles[0],
+      id: user._id.toString(),
       roles: user.roles,
     });
 
-    return response.success(
-      res,
-      {
-        token,
-        user: {
-          id: user._id,
-          name: user.username,
-          email: user.email,
-          roles: user.roles,
-        },
-      },
-      "Login success!",
-    );
+    return response.success(res, token, "Login success!");
   } catch (error) {
     return response.error(res, error, "Login failed");
   }
@@ -303,7 +292,7 @@ export const Me = async (req: IReqUser, res: Response) => {
   try {
     const user = req.user;
     let result;
-    const currentRole = Array.isArray(user?.roles) ? user.roles[0] : user?.role;
+    const currentRole = Array.isArray(user?.roles) ? user.roles[0] : undefined;
 
     if (currentRole === "STUDENT") {
       result = [
@@ -341,26 +330,60 @@ export const ActivationCode = async (req: Request, res: Response) => {
       isApprove: APPROVE.APPROVED,
     });
 
+    if (!approveDetected) {
+      return response.error(
+        res,
+        new Error("User not approved"),
+        "Activation failed",
+      );
+    }
+
     const user = await UserModel.findOneAndUpdate(
-      {
-        activationCode: code,
-      },
-      {
-        status: STATUS.ACTIVE,
-      },
-      {
-        new: true,
-      },
+      { activationCode: code },
+      { status: STATUS.ACTIVE },
+      { new: true },
     );
 
-    const result = [approveDetected, user];
-
-    return response.success(res, result, "Activation successful");
+    return response.success(
+      res,
+      [approveDetected, user],
+      "Activation successful",
+    );
   } catch (error) {
     return response.error(res, error, "Activation failed");
   }
 };
 
-export const ApproveUser = async (req: Request, res: Response) => {
-  const { userId, approve } = req.body as { userId: string; approve: boolean };
-}
+export const ApproveUser = async (req: IApproveUser, res: Response) => {
+  const { userId } = req.params;
+  const { isApprove, approveByUser, approveAt } = req.body;
+
+  try {
+    const adminUser = await UserModel.findByIdAndUpdate(
+      userId,
+      {
+        isApprove,
+        approveByUser,
+        approveAt: new Date(approveAt),
+        updateAt: new Date(),
+      },
+      { new: true, runValidators: true },
+    );
+
+    if (!adminUser) {
+      return response.error(
+        res,
+        new Error("User not found"),
+        `Approval failed, problem: ${Error}`,
+      );
+    }
+
+    return response.success(
+      res,
+      adminUser,
+      "User approval status updated successfully",
+    );
+  } catch (error) {
+    return response.error(res, error, `Approval failed, problem: ${error}`);
+  }
+};
