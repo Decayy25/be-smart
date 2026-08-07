@@ -1,8 +1,31 @@
 import express from "express";
-import { ActivationCode, Login, Me, Register } from "../controllers/auth.controller";
-import { authenticate } from "../middlewares/auth.middleware";
+import {
+  ActivationCode,
+  ApproveUser,
+  Login,
+  Me,
+  Register,
+} from "../controllers/auth.controller";
+import {
+  authenticate,
+  authorize,
+  authorizePosition,
+} from "../middlewares/auth.middleware";
+import { POSITION, ROLES } from "../utils/constant";
 
 const router = express.Router();
+
+router.post("/auth/register", Register);
+router.post("/auth/login", Login);
+router.get("/auth/me", authenticate, Me);
+router.post("/auth/activation", ActivationCode);
+router.patch(
+  "/auth/:id/approve",
+  authenticate,
+  authorize([ROLES.TEACHER]),
+  authorizePosition([POSITION.PRINCIPAL, POSITION.VICE_PRINCIPAL]),
+  ApproveUser,
+);
 
 /**
  *
@@ -130,9 +153,212 @@ const router = express.Router();
  *               data: null
  */
 
-router.post("/auth/register", Register);
-router.post("/auth/login", Login);
-router.get("/auth/me", authenticate, Me);
-router.post("/auth/activation", ActivationCode);
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Login akun
+ *     description: Login menggunakan email, username, atau NIK dan password.
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/LoginRequest'
+ *           example:
+ *             identifier: "ahmad@student.example.com"
+ *             password: "password123"
+ *     responses:
+ *       200:
+ *         description: Login berhasil
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *             example:
+ *               meta:
+ *                 status: 200
+ *                 message: "Login success!"
+ *               data: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *       400:
+ *         description: Invalid credentials
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Login gagal
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+
+/**
+ * @swagger
+ * /api/auth/me:
+ *   get:
+ *     summary: Ambil informasi pengguna saat ini
+ *     description: Mengambil data user dan profil berdasarkan token JWT yang valid.
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Data user berhasil diambil
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *             example:
+ *               meta:
+ *                 status: 200
+ *                 message: "User data retrieved successfully"
+ *               data:
+ *                 -
+ *                   _id: "64f1a2b3c4d5e6f7a8b9c0d1"
+ *                   username: "Ahmad Siswa"
+ *                   email: "ahmad@student.example.com"
+ *                   roles: ["STUDENT"]
+ *                   status: "ACTIVE"
+ *                   isApprove: "APPROVED"
+ *                 -
+ *                   userId: "64f1a2b3c4d5e6f7a8b9c0d1"
+ *                   studentId: "0012345678"
+ *                   fatherName: "Budi Santoso"
+ *                   motherName: "Siti Rahayu"
+ *       401:
+ *         description: Unauthorized / token tidak valid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UnauthorizedResponse'
+ *       500:
+ *         description: Gagal mengambil data user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+
+/**
+ * @swagger
+ * /api/auth/activation:
+ *   post:
+ *     summary: Aktivasi akun pengguna
+ *     description: Mengaktifkan akun setelah admin menyetujui user dengan activation code.
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ActivationRequest'
+ *           example:
+ *             code: "activation-code-123"
+ *     responses:
+ *       200:
+ *         description: Aktivasi berhasil
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *             example:
+ *               meta:
+ *                 status: 200
+ *                 message: "Activation successful"
+ *               data:
+ *                 -
+ *                   _id: "64f1a2b3c4d5e6f7a8b9c0d1"
+ *                   username: "Ahmad Siswa"
+ *                   email: "ahmad@student.example.com"
+ *                   status: "ACTIVE"
+ *                 -
+ *                   _id: "64f1a2b3c4d5e6f7a8b9c0d2"
+ *                   userId: "64f1a2b3c4d5e6f7a8b9c0d1"
+ *                   status: "ACTIVE"
+ *       400:
+ *         description: User tidak disetujui atau kode tidak valid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Aktivasi gagal
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+
+/**
+ * @swagger
+ * /api/auth/{id}/approve:
+ *   patch:
+ *     summary: Setujui atau ubah status approval akun pengguna
+ *     description: Endpoint ini hanya dapat diakses oleh guru yang memiliki posisi Kepala Sekolah atau Wakil Kepala Sekolah. Identitas admin diambil dari token JWT yang sedang login.
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID pengguna target yang akan diubah status approval-nya
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - isApprove
+ *             properties:
+ *               isApprove:
+ *                 type: string
+ *                 enum: [APPROVED, PENDING, PENDING_PAYMENT, DAPODIK_ISSUE, DATA_ISSUE]
+ *                 example: APPROVED
+ *               targetUserId:
+ *                 type: string
+ *                 description: ID pengguna target yang akan diubah status approval-nya. Jika tidak dikirim, parameter path id akan dipakai.
+ *                 example: "64f1a2b3c4d5e6f7a8b9c0d1"
+ *               approvedAt:
+ *                 type: string
+ *                 format: date-time
+ *                 example: "2026-08-07T10:00:00.000Z"
+ *     responses:
+ *       200:
+ *         description: Status approval berhasil diperbarui
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *             example:
+ *               meta:
+ *                 status: 200
+ *                 message: "User approval status updated successfully"
+ *               data:
+ *                 _id: "64f1a2b3c4d5e6f7a8b9c0d1"
+ *                 username: "Ahmad Siswa"
+ *                 email: "ahmad@student.example.com"
+ *                 isApprove: "APPROVED"
+ *                 approvedByUser: "admin"
+ *                 approvedAt: "2026-08-07T10:00:00.000Z"
+ *       401:
+ *         description: Tidak memiliki akses / token tidak valid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UnauthorizedResponse'
+ *       500:
+ *         description: Gagal memperbarui approval
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 
 export default router;

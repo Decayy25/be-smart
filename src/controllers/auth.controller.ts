@@ -10,23 +10,17 @@ import { APPROVE, ROLES, STAFF_DEPARTMENT, STATUS } from "../utils/constant";
 import { comparePassword } from "../utils/encrypt";
 import { generateToken } from "../utils/jwt";
 import {
+  ILogin,
   StaffRegisterData,
   StudentRegisterData,
   TeacherRegisterData,
 } from "../@types/Auth";
-import mongoose from "mongoose";
 import { IApproveUser, IReqUser } from "../utils/interfaces";
-import { renderMailHTML, sendMail } from "../utils/mail/mail";
-import { CLIENT_HOST, EMAIL_SMTP_USER } from "../utils/environment";
 
 export const Register = async (req: Request, res: Response) => {
   const { role, ...data } = req.body;
 
-  const session = await mongoose.startSession();
-
   try {
-    session.startTransaction();
-
     const schema = getRegisterSchema(role);
     const validateData = await schema.validate({ role, ...data });
 
@@ -36,10 +30,9 @@ export const Register = async (req: Request, res: Response) => {
         { email: validateData.email },
         { nik_ktp: validateData.nik_ktp },
       ],
-    }).session(session);
+    });
 
     if (existingUser) {
-      await session.abortTransaction();
       return response.error(
         res,
         new Error("Email/NIK/username sudah terdaftar"),
@@ -47,16 +40,18 @@ export const Register = async (req: Request, res: Response) => {
       );
     }
 
+    let createdUser;
+    let createdProfile;
+
     switch (role) {
       case ROLES.STUDENT: {
         const studentData = validateData as StudentRegisterData;
 
         const existingStudent = await StudentProfileModel.findOne({
           studentId: studentData.nisn,
-        }).session(session);
+        });
 
         if (existingStudent) {
-          await session.abortTransaction();
           return response.error(
             res,
             new Error("NISN sudah terdaftar"),
@@ -75,7 +70,7 @@ export const Register = async (req: Request, res: Response) => {
           isApprove: APPROVE.PENDING,
         });
 
-        await student.save({ session });
+        await student.save();
 
         const studentProfile = new StudentProfileModel({
           userId: student._id,
@@ -85,15 +80,11 @@ export const Register = async (req: Request, res: Response) => {
           parentPhone: studentData.parentPhone,
         });
 
-        await studentProfile.save({ session });
+        await studentProfile.save();
 
-        await session.commitTransaction();
-
-        return response.success(
-          res,
-          { user: student, profile: studentProfile },
-          "Registration successful. Please wait for admin approval.",
-        );
+        createdUser = student;
+        createdProfile = studentProfile;
+        break;
       }
 
       case ROLES.TEACHER: {
@@ -101,10 +92,9 @@ export const Register = async (req: Request, res: Response) => {
 
         const existingTeacher = await TeacherProfileModel.findOne({
           nuptk: teacherData.nuptk,
-        }).session(session);
+        });
 
         if (existingTeacher) {
-          await session.abortTransaction();
           return response.error(
             res,
             new Error("NUPTK sudah terdaftar"),
@@ -123,7 +113,7 @@ export const Register = async (req: Request, res: Response) => {
           isApprove: APPROVE.PENDING,
         });
 
-        await teacher.save({ session });
+        await teacher.save();
 
         const teacherProfile = new TeacherProfileModel({
           userId: teacher._id,
@@ -137,14 +127,10 @@ export const Register = async (req: Request, res: Response) => {
           },
         });
 
-        await teacherProfile.save({ session });
-        await session.commitTransaction();
-
-        return response.success(
-          res,
-          { user: teacher, profile: teacherProfile },
-          "Registration successful. Please wait for admin approval.",
-        );
+        await teacherProfile.save();
+        createdUser = teacher;
+        createdProfile = teacherProfile;
+        break;
       }
 
       case ROLES.STAFF: {
@@ -152,12 +138,12 @@ export const Register = async (req: Request, res: Response) => {
 
         const departmentValue = staffData.department
           ? Object.values(STAFF_DEPARTMENT).includes(
-              staffData.department as STAFF_DEPARTMENT,
-            )
+            staffData.department as STAFF_DEPARTMENT,
+          )
             ? staffData.department
             : (STAFF_DEPARTMENT[
-                staffData.department as keyof typeof STAFF_DEPARTMENT
-              ] ?? null)
+              staffData.department as keyof typeof STAFF_DEPARTMENT
+            ] ?? null)
           : null;
 
         const staff = new UserModel({
@@ -171,7 +157,7 @@ export const Register = async (req: Request, res: Response) => {
           isApprove: APPROVE.PENDING,
         });
 
-        await staff.save({ session });
+        await staff.save();
 
         const staffProfile: IStaffProfile = new StaffProfileModel({
           userId: staff._id,
@@ -181,15 +167,11 @@ export const Register = async (req: Request, res: Response) => {
           workShift: staffData.workShift || null,
         });
 
-        await staffProfile.save({ session });
+        await staffProfile.save();
 
-        await session.commitTransaction();
-
-        return response.success(
-          res,
-          { user: staff, profile: staffProfile },
-          "Registration successful. Please wait for admin approval.",
-        );
+        createdUser = staff;
+        createdProfile = staffProfile;
+        break;
       }
 
       default:
@@ -199,8 +181,13 @@ export const Register = async (req: Request, res: Response) => {
           "Registration failed, problem: Invalid role",
         );
     }
+
+    return response.success(
+      res,
+      { user: createdUser, profile: createdProfile },
+      "Registration successful. Please wait for admin approval.",
+    );
   } catch (error) {
-    await session.abortTransaction();
     if (error instanceof Yup.ValidationError) {
       return response.error(res, new Error(error.message), error.message);
     }
@@ -211,13 +198,11 @@ export const Register = async (req: Request, res: Response) => {
       error,
       `Registration failed, problem: ${message}`,
     );
-  } finally {
-    await session.endSession();
   }
 };
 
 export const Login = async (req: Request, res: Response) => {
-  const { identifier, password } = req.body;
+  const { identifier, password } = req.body as ILogin;
 
   try {
     if (!identifier || !password) {
@@ -277,9 +262,15 @@ export const Login = async (req: Request, res: Response) => {
       );
     }
 
+    const teacherProfile = user.roles.includes(ROLES.TEACHER)
+      ? await TeacherProfileModel.findOne({ userId: user._id })
+      : null;
+
     const token = generateToken({
       id: user._id.toString(),
+      username: user.username,
       roles: user.roles,
+      positions: teacherProfile?.positions || [],
     });
 
     return response.success(res, token, "Login success!");
@@ -334,56 +325,93 @@ export const ActivationCode = async (req: Request, res: Response) => {
       return response.error(
         res,
         new Error("User not approved"),
-        "Activation failed",
+        "Activation failed, problem: user is not approved yet",
       );
     }
 
     const user = await UserModel.findOneAndUpdate(
       { activationCode: code },
-      { status: STATUS.ACTIVE },
-      { new: true },
+      { status: STATUS.ACTIVE, activationCode: null },
+      { returnDocument: 'after' },
     );
 
-    return response.success(
-      res,
-      [approveDetected, user],
-      "Activation successful",
-    );
+    return response.success(res, user, "Activation successful");
   } catch (error) {
-    return response.error(res, error, "Activation failed");
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return response.error(res, error, `Activation failed, problem: ${message}`);
   }
 };
 
-export const ApproveUser = async (req: IApproveUser, res: Response) => {
-  const { userId } = req.params;
-  const { isApprove, approveByUser, approveAt } = req.body;
+export const ApproveUser = async (req: IReqUser, res: Response) => {
+  const user = req.user;
+  const { id } = req.params;
+  const { isApprove, approvedAt } = req.body as IApproveUser;
 
   try {
-    const adminUser = await UserModel.findByIdAndUpdate(
-      userId,
+    const adminUsername = user?.username ?? null;
+    const targetUser = await UserModel.findByIdAndUpdate(
+      id,
       {
         isApprove,
-        approveByUser,
-        approveAt: new Date(approveAt),
-        updateAt: new Date(),
+        approvedByUser: adminUsername,
+        approvedAt: approvedAt ? new Date(approvedAt) : null,
       },
-      { new: true, runValidators: true },
+      { returnDocument: 'after', runValidators: true },
     );
 
-    if (!adminUser) {
+    if (!targetUser) {
       return response.error(
         res,
         new Error("User not found"),
-        `Approval failed, problem: ${Error}`,
+        "Approval failed, problem: User not found",
       );
     }
 
     return response.success(
       res,
-      adminUser,
+      targetUser,
       "User approval status updated successfully",
     );
   } catch (error) {
-    return response.error(res, error, `Approval failed, problem: ${error}`);
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return response.error(res, error, `Approval failed, problem: ${message}`);
   }
 };
+
+// export const ApproveUser = async (req: IReqUser, res: Response) => {
+//   const { id } = req.params;
+//   const { isApprove, approvedAt, targetUserId } = req.body as IApproveUser;
+//   const approverId = id;
+//   const targetUserIdToUpdate = targetUserById || targetUserId || id;
+
+//   try {
+//     const adminUser = await UserModel.findById(approverId).select("username");
+//     const approverName = !!adminUser?.username;
+
+//     const targetUser = await UserModel.findByIdAndUpdate(
+//       targetUserIdToUpdate,
+//       {
+//         isApprove,
+//         approvedByUser: approverName,
+//         approvedAt: approvedAt ? new Date(approvedAt) : null,
+//       },
+//       { new: true, runValidators: true },
+//     );
+
+//     if (!targetUser) {
+//       return response.error(
+//         res,
+//         new Error("User not found"),
+//         "Approval failed, problem: User not found",
+//       );
+//     }
+
+//     return response.success(
+//       res,
+//       targetUser,
+//       "User approval status updated successfully",
+//     );
+//   } catch (error) {
+//     return response.error(res, error, `Approval failed, problem: ${error}`);
+//   }
+// };

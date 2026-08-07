@@ -3,7 +3,9 @@ import { Types } from "mongoose";
 
 export interface IUserToken {
   id: string | Types.ObjectId;
+  username?: string;
   roles: string[];
+  positions?: string[];
 }
 
 export interface IReqUser extends Request {
@@ -11,8 +13,7 @@ export interface IReqUser extends Request {
 }
 
 export interface IApproveUser extends Request {
-  userId: string;
-  isApprove: boolean;
-  approveByUser: string;
-  approveAt: Date;
+  userId?: string;
+  isApprove: string;
+  approvedAt?: Date;
 }

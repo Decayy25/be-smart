@@ -15,7 +15,7 @@ export interface IUser extends Document {
   roles: string[];
   status: string;
   isApprove: string;
-  approvedByUser: mongoose.Types.ObjectId | null;
+  approvedByUser: string | null;
   approvedAt: Date | null;
   rejectionReason: string | null;
   activationCode: string | null;
@@ -78,8 +78,7 @@ export const UserSchema = new Schema<IUser>(
       index: true,
     },
     approvedByUser: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
+      type: Schema.Types.String,
       default: null,
     },
     approvedAt: {
@@ -138,7 +137,7 @@ UserSchema.methods.toJSON = function () {
   return user;
 };
 
-UserSchema.post('findOneAndUpdate', async function(doc) {
+UserSchema.post("findOneAndUpdate", async function (doc) {
   if (doc && doc.isApprove === APPROVE.APPROVED) {
     try {
       doc.activationCodeExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);

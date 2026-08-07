@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import ejs from "ejs"
 import path from "path"
+import { fileURLToPath } from "url"
 import { 
     EMAIL_SMTP_HOST, 
     EMAIL_SMTP_PASS, 
@@ -8,8 +9,7 @@ import {
     EMAIL_SMTP_SECURE, 
     EMAIL_SMTP_SERVICE_NAME, 
     EMAIL_SMTP_USER
-} from "../env";
-import { string } from "yup";
+} from "../environment";
 
 
 const tranporter = nodemailer.createTransport({
@@ -39,6 +39,8 @@ export const sendMail = async ({ ...mailParams}: IsendEmail) => {
 }
 
 export const renderMailHTML = async (template: string, data: any): Promise<string> => {
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
     const content = await ejs.renderFile(
         path.join(__dirname, `templates/${template}`),
         data
