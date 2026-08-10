@@ -1,6 +1,8 @@
 import mongoose, { Document } from "mongoose";
 import { ROLES, STATUS, APPROVE } from "../../utils/constant";
 import { encrypt } from "../../utils/encrypt";
+import { CLIENT_HOST, EMAIL_SMTP_USER } from "../../utils/environment";
+import { renderMailHTML, sendMail } from "../../utils/mail/mail";
 
 const Schema = mongoose.Schema;
 
@@ -13,17 +15,18 @@ export interface IUser extends Document {
   roles: string[];
   status: string;
   isApprove: string;
-  approvedByUser: mongoose.Types.ObjectId | null;
+  approvedByUser: string | null;
   approvedAt: Date | null;
   rejectionReason: string | null;
-  activationToken: string | null;
+  activationCode: string | null;
+  profilePicture: string | null;
   lastLoginAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
 }
 
-const UserSchema = new Schema<IUser>(
+export const UserSchema = new Schema<IUser>(
   {
     username: {
       type: Schema.Types.String,
@@ -75,8 +78,7 @@ const UserSchema = new Schema<IUser>(
       index: true,
     },
     approvedByUser: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
+      type: Schema.Types.String,
       default: null,
     },
     approvedAt: {
@@ -87,10 +89,14 @@ const UserSchema = new Schema<IUser>(
       type: Schema.Types.String,
       default: null,
     },
-    activationToken: {
+    activationCode: {
       type: Schema.Types.String,
       default: null,
       select: false,
+    },
+    profilePicture: {
+      type: Schema.Types.String,
+      default: "user.jpg",
     },
     lastLoginAt: {
       type: Date,
@@ -116,7 +122,7 @@ UserSchema.pre("save", async function (this: any) {
       user.password = encrypt(user.password);
     }
     if (user.isNew) {
-      user.activationToken = encrypt(user.id);
+      user.activationCode = encrypt(user.id);
     }
     return user;
   } catch (error) {
@@ -127,9 +133,36 @@ UserSchema.pre("save", async function (this: any) {
 UserSchema.methods.toJSON = function () {
   const user = this.toObject();
   delete user.password;
-  delete user.activationToken;
+  delete user.activationCode;
   return user;
 };
+
+UserSchema.post("findOneAndUpdate", async function (doc) {
+  if (doc && doc.isApprove === APPROVE.APPROVED) {
+    try {
+      doc.activationCodeExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      await doc.save();
+
+      const contentMail = await renderMailHTML("registration-success.ejs", {
+        username: doc.username,
+        email: doc.email,
+        createdAt: doc.createdAt,
+        activationLink: `${CLIENT_HOST}/auth/activation?code=${doc.activationCode}`,
+      });
+
+      await sendMail({
+        from: EMAIL_SMTP_USER,
+        to: doc.email,
+        subject: "Activation Link - Silahkan Aktivasi Akun Anda",
+        html: contentMail,
+      });
+
+      console.log(`Activation email sent to ${doc.email}`);
+    } catch (error) {
+      console.error(`Failed to send activation email:`, error);
+    }
+  }
+});
 
 const UserModel = mongoose.model<IUser>("User", UserSchema);
 

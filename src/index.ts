@@ -23,37 +23,50 @@ const init = async () => {
     app.use(helmet());
     app.use(
       cors({
-        origin: "https://localhost:3000",
+        origin: "*",
         credentials: true,
       }),
     );
     app.use(express.json());
 
     // Security headers
-    app.use((req, res, next) => {
-      res.setHeader("Strict-Transport-Security", "max-age=31536000");
-      res.setHeader("X-Content-Type-Options", "nosniff");
-      res.setHeader("X-Frame-Options", "DENY");
-      res.setHeader("X-XSS-Protection", "1; mode=block");
-      next();
-    });
+    app.use(
+      (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        res.setHeader("Strict-Transport-Security", "max-age=31536000");
+        res.setHeader("X-Content-Type-Options", "nosniff");
+        res.setHeader("X-Frame-Options", "DENY");
+        res.setHeader("X-XSS-Protection", "1; mode=block");
+        next();
+      },
+    );
 
     // Routes
     app.use("/api", router);
     app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-    app.get("/api-docs.json", (req, res) => {
+    app.get("/api-docs.json", (req: express.Request, res: express.Response) => {
       res.setHeader("Content-Type", "application/json");
       res.send(swaggerSpec);
     });
 
     // Error Handling
-    app.use((err: any, res: express.Response) => {
-      console.error(err.stack);
-      res.status(500).json({ error: "Internal Server Error" });
-    });
+    app.use(
+      (
+        err: any,
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        console.error(err && err.stack ? err.stack : err);
+        res.status(500).json({ error: "Internal Server Error" });
+      },
+    );
 
     // Load SSL Certificates
-    const currentFilePath = fileURLToPath(import.meta.url);
+    const currentFilePath = __filename;
     const currentDir = path.dirname(currentFilePath);
     const projectRoot = path.resolve(currentDir, "..");
     const cert = path.join(projectRoot, "certs", ".pem");
@@ -65,7 +78,7 @@ const init = async () => {
     };
 
     app.use(bodyParser.json());
-    app.get("/", (req, res) => {
+    app.get("/", (req: express.Request, res: express.Response) => {
       res.status(200).json({
         message: "Server is running",
         data: null,
@@ -105,7 +118,7 @@ const init = async () => {
       });
     };
 
-    startServer(Number(process.env.PORT || PORT));
+    startServer(Number(PORT));
   } catch (error) {
     console.error(error);
   }

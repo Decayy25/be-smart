@@ -2,18 +2,21 @@
   "compilerOptions": {
     // Environment setup & latest features
     "lib": ["ESNext"],
-    "target": "ESNext",
-    "module": "ESNext",
-    "moduleDetection": "force",
+    "target": "ES2020",
+    "module": "CommonJS",
     "jsx": "react-jsx",
     "allowJs": true,
 
-    // Bundler mode - untuk support import tanpa .ts
-    "moduleResolution": "bundler",
+    // Output settings
+    "outDir": "dist",
+    "rootDir": "src",
+    "moduleResolution": "node",
     "resolveJsonModule": true,
-    "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": false,
-    "noEmit": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "types": ["node"],
+    "noEmit": false,
 
     // Best practices
     "strict": true,
