@@ -138,12 +138,12 @@ export const Register = async (req: Request, res: Response) => {
 
         const departmentValue = staffData.department
           ? Object.values(STAFF_DEPARTMENT).includes(
-            staffData.department as STAFF_DEPARTMENT,
-          )
+              staffData.department as STAFF_DEPARTMENT,
+            )
             ? staffData.department
             : (STAFF_DEPARTMENT[
-              staffData.department as keyof typeof STAFF_DEPARTMENT
-            ] ?? null)
+                staffData.department as keyof typeof STAFF_DEPARTMENT
+              ] ?? null)
           : null;
 
         const staff = new UserModel({
@@ -329,17 +329,10 @@ export const ActivationCode = async (req: Request, res: Response) => {
       );
     }
 
-<<<<<<< HEAD
-    const user = await UserModel.findOneAndReplace(
-      { activationCode: code },
-      { status: STATUS.ACTIVE, activationCode: null },
-      { new: true },
-=======
     const user = await UserModel.findOneAndUpdate(
       { activationCode: code },
       { status: STATUS.ACTIVE, activationCode: null },
-      { returnDocument: 'after' },
->>>>>>> e921a0bc66a19125068fa095974e633ce7cbc745
+      { returnDocument: "after" },
     );
 
     return response.success(res, user, "Activation successful");
@@ -363,11 +356,7 @@ export const ApproveUser = async (req: IReqUser, res: Response) => {
         approvedByUser: adminUsername,
         approvedAt: approvedAt ? new Date(approvedAt) : null,
       },
-<<<<<<< HEAD
-      { new: true, runValidators: true },
-=======
-      { returnDocument: 'after', runValidators: true },
->>>>>>> e921a0bc66a19125068fa095974e633ce7cbc745
+      { returnDocument: "after", runValidators: true },
     );
 
     if (!targetUser) {
@@ -387,46 +376,4 @@ export const ApproveUser = async (req: IReqUser, res: Response) => {
     const message = error instanceof Error ? error.message : "Unknown error";
     return response.error(res, error, `Approval failed, problem: ${message}`);
   }
-<<<<<<< HEAD
 };
-
-// export const ApproveUser = async (req: IReqUser, res: Response) => {
-//   const { id } = req.params;
-//   const { isApprove, approvedAt, targetUserId } = req.body as IApproveUser;
-//   const approverId = id;
-//   const targetUserIdToUpdate = targetUserById || targetUserId || id;
-
-//   try {
-//     const adminUser = await UserModel.findById(approverId).select("username");
-//     const approverName = !!adminUser?.username;
-
-//     const targetUser = await UserModel.findByIdAndUpdate(
-//       targetUserIdToUpdate,
-//       {
-//         isApprove,
-//         approvedByUser: approverName,
-//         approvedAt: approvedAt ? new Date(approvedAt) : null,
-//       },
-//       { new: true, runValidators: true },
-//     );
-
-//     if (!targetUser) {
-//       return response.error(
-//         res,
-//         new Error("User not found"),
-//         "Approval failed, problem: User not found",
-//       );
-//     }
-
-//     return response.success(
-//       res,
-//       targetUser,
-//       "User approval status updated successfully",
-//     );
-//   } catch (error) {
-//     return response.error(res, error, `Approval failed, problem: ${error}`);
-//   }
-// };
-=======
-};
->>>>>>> e921a0bc66a19125068fa095974e633ce7cbc745

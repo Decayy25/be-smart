@@ -26,16 +26,6 @@ router.patch(
   authorizePosition([POSITION.PRINCIPAL, POSITION.VICE_PRINCIPAL]),
   ApproveUser,
 );
-<<<<<<< HEAD
-router.patch(
-  "/auth/approve/:id",
-  authenticate,
-  authorize([ROLES.TEACHER]),
-  authorizePosition([POSITION.PRINCIPAL, POSITION.VICE_PRINCIPAL]),
-  ApproveUser,
-);
-=======
->>>>>>> e921a0bc66a19125068fa095974e633ce7cbc745
 
 /**
  *
@@ -304,11 +294,7 @@ router.patch(
 
 /**
  * @swagger
-<<<<<<< HEAD
- * /api/auth/approve/{id}:
-=======
  * /api/auth/{id}/approve:
->>>>>>> e921a0bc66a19125068fa095974e633ce7cbc745
  *   patch:
  *     summary: Setujui atau ubah status approval akun pengguna
  *     description: Endpoint ini hanya dapat diakses oleh guru yang memiliki posisi Kepala Sekolah atau Wakil Kepala Sekolah. Identitas admin diambil dari token JWT yang sedang login.
