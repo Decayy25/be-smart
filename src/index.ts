@@ -3,13 +3,15 @@ import helmet from "helmet";
 import router from "./routes/api";
 import bodyParser from "body-parser";
 import https from "https";
+import http from "http";
 import path from "path";
 import fs from "fs";
 import cors from "cors";
 import db from "./utils/database";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./utils/swagger";
-import { fileURLToPath } from "url";
+
+const IS_VERCEL = !!process.env.VERCEL || process.env.NODE_ENV === "production";
 
 const init = async () => {
   try {
@@ -65,18 +67,6 @@ const init = async () => {
       },
     );
 
-    // Load SSL Certificates
-    const currentFilePath = __filename;
-    const currentDir = path.dirname(currentFilePath);
-    const projectRoot = path.resolve(currentDir, "..");
-    const cert = path.join(projectRoot, "certs", ".pem");
-    const key = path.join(projectRoot, "certs", "key.pem");
-
-    const options: https.ServerOptions = {
-      cert: fs.readFileSync(cert),
-      key: fs.readFileSync(key),
-    };
-
     app.use(bodyParser.json());
     app.get("/", (req: express.Request, res: express.Response) => {
       res.status(200).json({
@@ -85,40 +75,91 @@ const init = async () => {
       });
     });
 
-    const startServer = (port: number) => {
-      const server = https.createServer(options, app);
+    if (IS_VERCEL) {
+      const startServer = (port: number) => {
+        const server = http.createServer(app);
 
-      server.on("error", (error: NodeJS.ErrnoException) => {
-        if (error.code === "EADDRINUSE") {
-          console.warn(`Port ${port} is already in use. Trying ${port + 1}...`);
-          startServer(port + 1);
-          return;
-        }
+        server.on("error", (error: NodeJS.ErrnoException) => {
+          if (error.code === "EADDRINUSE") {
+            console.warn(
+              `Port ${port} is already in use. Trying ${port + 1}...`,
+            );
+            startServer(port + 1);
+            return;
+          }
+          console.error("Server startup error:", error);
+        });
 
-        console.error("Server startup error:", error);
-      });
+        server.listen(port, () => {
+          console.log(
+            "\x1b[34m+============================================================+\x1b[0m",
+          );
+          console.log(
+            "\x1b[35m|\x1b[32m",
+            `[HTTP] Server is running on port ${port}                    `,
+            "\x1b[35m|\x1b[32m",
+          );
+          console.log(
+            "\x1b[35m|\x1b[32m",
+            `[HTTP] Swagger UI is available at /api-docs                 `,
+            "\x1b[35m|\x1b[32m",
+          );
+          console.log(
+            "\x1b[34m+============================================================+\x1b[0m",
+          );
+        });
+      };
 
-      server.listen(port, () => {
-        console.log(
-          "\x1b[34m+============================================================+\x1b[0m",
-        );
-        console.log(
-          "\x1b[35m|\x1b[32m",
-          `Server is running on https://localhost:${port}               `,
-          "\x1b[35m|\x1b[32m",
-        );
-        console.log(
-          "\x1b[35m|\x1b[32m",
-          `Swagger UI is available at https://localhost:${port}/api-docs`,
-          "\x1b[35m|\x1b[32m",
-        );
-        console.log(
-          "\x1b[34m+============================================================+\x1b[0m",
-        );
-      });
-    };
+      startServer(Number(PORT));
+    } else {
+      // === MODE HTTPS (Local Development) ===
+      const currentFilePath = __filename;
+      const currentDir = path.dirname(currentFilePath);
+      const projectRoot = path.resolve(currentDir, "..");
+      const cert = path.join(projectRoot, "certs", ".pem");
+      const key = path.join(projectRoot, "certs", "key.pem");
 
-    startServer(Number(PORT));
+      const options: https.ServerOptions = {
+        cert: fs.readFileSync(cert),
+        key: fs.readFileSync(key),
+      };
+
+      const startServer = (port: number) => {
+        const server = https.createServer(options, app);
+
+        server.on("error", (error: NodeJS.ErrnoException) => {
+          if (error.code === "EADDRINUSE") {
+            console.warn(
+              `Port ${port} is already in use. Trying ${port + 1}...`,
+            );
+            startServer(port + 1);
+            return;
+          }
+          console.error("Server startup error:", error);
+        });
+
+        server.listen(port, () => {
+          console.log(
+            "\x1b[34m+============================================================+\x1b[0m",
+          );
+          console.log(
+            "\x1b[35m|\x1b[32m",
+            `[HTTPS] Server is running on https://localhost:${port}      `,
+            "\x1b[35m|\x1b[32m",
+          );
+          console.log(
+            "\x1b[35m|\x1b[32m",
+            `[HTTPS] Swagger UI: https://localhost:${port}/api-docs      `,
+            "\x1b[35m|\x1b[32m",
+          );
+          console.log(
+            "\x1b[34m+============================================================+\x1b[0m",
+          );
+        });
+      };
+
+      startServer(Number(PORT));
+    }
   } catch (error) {
     console.error(error);
   }
