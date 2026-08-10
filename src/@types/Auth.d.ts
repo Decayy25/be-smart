@@ -41,4 +41,9 @@ interface StaffRegisterData {
   workShift?: string;
 }
 
-export type {StudentRegisterData, TeacherRegisterData, StaffRegisterData};
+interface ILogin {
+  identifier: string;
+  password: string;
+}
+
+export type { StudentRegisterData, TeacherRegisterData, StaffRegisterData, ILogin };
